@@ -1,0 +1,35 @@
+Metabolite_Menni	Name_Chen	Super.pathway_Menni	Sub.pathway_Menni	Beta_age_Menni	SE_age_Menni	p_age_Menni	HMDB_Chen	Source_Chen	CAS_Chen
+allantoin	Allantoin	Nucleotide	Purine metabolism, urate metabolism	0.013	0.001	4.41e-37	HMDB0000462	Human/Food/Bacteria	97-59-6
+betaine	Betaine	Amino acid	Glycine, serine and threonine metabolism	0.009	0.0011	2.42e-15	HMDB0000043	Human/Food/Bacteria/Drug	107-43-7
+mannose	D-Mannose	Carbohydrate	Fructose, mannose, galactose, starch, and sucrose metabolism	0.015	9e-04	1.2e-58	HMDB0000169	Food/Bacteria	3458-28-4
+glycerol	Glycerol	Lipid	Glycerolipid metabolism	0.017	9e-04	3.92e-75	HMDB0000131	Human/Food/Bacteria	56-81-5
+glycine	Glycine	Amino acid	Glycine, serine and threonine metabolism	0.012	0.001	2.99e-31	HMDB0000123	Human/Food/Bacteria	56-40-6
+glycochenodeoxycholate	Glycochenodeoxycholic acid sodium salt	Lipid	Bile acid metabolism	0.005	0.001	2.36e-06	HMDB0000637	Bacteria	16564-43-5
+hippurate	Hippuric acid	Xenobiotics	Benzoate metabolism	0.015	0.001	5.62e-44	HMDB0000714	At least Bacteria	495-69-2
+hypoxanthine	Hypoxanthine	Nucleotide	Purine metabolism, (hypo)xanthine/inosine containing	-0.007	0.001	3.24e-10	HMDB0000157	Human/Food/Bacteria	68-94-0
+indoleacetate	Indoleacetic acid	Amino acid	Tryptophan metabolism	0.008	0.001	2.28e-16	HMDB0000197	At least Bacteria	87-51-4
+alanine	L-Alanine	Amino acid	Alanine and aspartate metabolism	0.014	9e-04	3.75e-48	HMDB0000161	Human/Food/Bacteria	56-41-7
+asparagine	L-Asparagine	Amino acid	Alanine and aspartate metabolism	0.005	9e-04	4.75e-07	HMDB0000168	Human/Food/Bacteria	70-47-3
+carnitine	L-Carnitine inner salt	Lipid	Carnitine metabolism	-0.005	0.001	1.73e-06	HMDB0000062	Human/Food/Bacteria	541-15-1
+citrulline	L-Citrulline	Amino acid	Urea cycle; arginine-, proline-, metabolism	0.025	0.001	1.06e-115	HMDB0000904	Human/Food/Bacteria	372-75-8
+glutamine	L-Glutamine	Amino acid	Glutamate metabolism	0.015	0.001	4.56e-48	HMDB0000641	Human/Food/Bacteria	56-85-9
+histidine	L-Histidine	Amino acid	Histidine metabolism	-0.013	0.001	2.98e-36	HMDB0000177	Human/Food/Bacteria	71-00-1
+isoleucine	L-Isoleucine	Amino acid	Valine, leucine and isoleucine metabolism	0.008	0.001	4.2e-18	HMDB0000172	Human/Food/Bacteria	73-32-5
+lysine	L-Lysine	Amino acid	Lysine metabolism	0.015	0.001	9.41e-51	HMDB0000182	Human/Food/Bacteria	56-87-1
+phenylalanine	L-Phenylalanine	Amino acid	Phenylalanine & tyrosine metabolism	0.011	0.001	1.14e-25	HMDB0000159	Human/Food/Bacteria	63-91-2
+serine	L-Serine	Amino acid	Glycine, serine and threonine metabolism	0.007	0.001	3.55e-14	HMDB0000187	Human/Food/Bacteria	56-45-1
+tryptophan	L-Tryptophan	Amino acid	Tryptophan metabolism	0.004	0.001	3.77e-05	HMDB0000929	Human/Food/Bacteria	73-22-3
+tyrosine	L-Tyrosine	Amino acid	Phenylalanine & tyrosine metabolism	0.017	0.001	1.29e-62	HMDB0000158	Human/Food/Bacteria	60-18-4
+valine	L-Valine	Amino acid	Valine, leucine and isoleucine metabolism	0.01	0.001	5.89e-24	HMDB0000883	Human/Food/Bacteria	72-18-4
+myo-inositol	Myoinositol	Lipid	Inositol metabolism	0.023	9e-04	3.87e-114	HMDB0000211	Human/Food/Bacteria	87-89-8
+myristate (14:0)	Myristic acid	Lipid	Long chain fatty acid	0.014	0.0011	2.25e-36	HMDB0000806	Human/Food/Bacteria	544-63-8
+N-acetylalanine	N-Acetyl-L-alanine	Amino acid	Alanine and aspartate metabolism	0.017	9e-04	5.8e-68	HMDB0000766	Human/Food/Bacteria	97-69-8
+phenylacetylglutamine	N2-phenylacetyl-L-glutamine	Amino acid	Phenylalanine & tyrosine metabolism	0.02	0.001	8.13e-89	HMDB0006344	Human/Bacteria	28047-15-6
+nonadecanoate (19:0)	Nonadecanoic acid	Lipid	Long chain fatty acid	0.013	0.001	6.09e-35	HMDB0000772	Human/Food/Bacteria	646-30-0
+ornithine	Ornithine HCl	Amino acid	Urea cycle; arginine-, proline-, metabolism	0.013	9e-04	1.37e-43	HMDB0000214	Human/Food/Bacteria	3184-13-2
+p-cresol sulfate	p-cresol sulfate	Amino acid	Phenylalanine & tyrosine metabolism	0.015	0.001	1.35e-46	HMDB0011635	At least Bacteria	3233-58-7
+pantothenate	Sodium D-Pantothenate	Cofactors and vitamins	Pantothenate and CoA metabolism	0.016	0.001	2.95e-59	HMDB0000210	Human/Food/Bacteria	867-81-2
+pyruvate	Sodium pyruvate	Carbohydrate	Glycolysis, gluconeogenesis, pyruvate metabolism	0.008	0.001	1.88e-18	HMDB0000243	Human/Food/Bacteria	113-24-6
+urea	Urea	Amino acid	Urea cycle; arginine-, proline-, metabolism	0.021	9e-04	4.78e-102	HMDB0000294	Human/Food/Bacteria	57-13-6
+uridine	Uridine	Nucleotide	Pyrimidine metabolism, uracil containing	0.008	0.001	6.65e-16	HMDB0000296	Human/Food/Bacteria	58-96-8
+xanthine	Xanthine	Nucleotide	Purine metabolism, (hypo)xanthine/inosine containing	-0.004	9e-04	2.5e-06	HMDB0000292	Human/Food/Bacteria	69-89-6

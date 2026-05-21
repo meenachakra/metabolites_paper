@@ -1,0 +1,135 @@
+```{r}
+# Set up
+rm(list = ls())
+
+library(readxl)
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
+library(ggalluvial)
+library(svglite)
+
+# Color palette
+base_pal <- c(
+  "#008888", "#880088", "#000080", "#E69F00",
+  "#009E73", "#56B4E9", "#F0E442", "#D55E00",
+  "#CC79A7", "#117733", "#882255", "#332288",
+  "#44AA99", "#999933", "#DDCC77", "#AA4499",
+  "#88CCEE"
+)
+
+# Input data
+file_path <- "Darst_Menni_Dunn_Chen_intersection_annotated_dedup.xlsx"
+dat <- read_excel(file_path, sheet = "Sheet1") %>%
+  select(
+    Original_Met_Name,
+    `GF_vs_CONV_Different?`,
+    top_20_pc_gutsy,
+    included_in_final_panel,
+    HMDB_class,
+    Order
+  )
+
+clean_col <- function(x) {
+  x <- as.character(x)
+  x <- str_trim(x)
+  x[is.na(x) | x == ""] <- "(missing)"
+  x
+}
+
+dat <- dat %>%
+  mutate(
+    across(c(Original_Met_Name, `GF_vs_CONV_Different?`,
+             top_20_pc_gutsy, included_in_final_panel, HMDB_class),
+           clean_col),
+    Order       = suppressWarnings(as.numeric(Order)),
+    alluvium_id = row_number()
+  )
+
+# Copy data for last column
+dat <- dat %>%
+  mutate(Original_Met_Name_end = Original_Met_Name)
+
+# Compute rank for the last column
+met_order <- dat %>%
+  arrange(Order) %>%
+  pull(Original_Met_Name) %>%
+  unique()
+
+rank_map <- tibble(
+  Original_Met_Name = met_order,
+  rank = seq_along(met_order)
+)
+
+# Zero-pad width alphabetical ordering
+rank_width <- max(2L, nchar(as.character(length(met_order))))
+
+# Reshape to long (lodes) and create axis-specific stratum with hidden rank on the mirror
+axis_levels <- c("Original_Met_Name",
+                 "GF_vs_CONV_Different?",
+                 "top_20_pc_gutsy",
+                 "included_in_final_panel",
+                 "Original_Met_Name_end")
+
+lodes <- dat %>%
+  pivot_longer(
+    cols = all_of(axis_levels),
+    names_to = "axis",
+    values_to = "stratum_raw"
+  ) %>%
+  mutate(axis = factor(axis, levels = axis_levels),
+         ord  = Order) %>%
+  # bring in rank for metabolites (will be NA for non-metabolite strata like Yes/No)
+  left_join(rank_map, by = c("stratum_raw" = "Original_Met_Name")) %>%
+  mutate(
+    # stratum used for plotting; prepend ranked prefix ONLY on mirrored axis
+    stratum_plot = ifelse(
+      axis == "Original_Met_Name_end" & !is.na(rank),
+      paste0(sprintf(paste0("R%0", rank_width, "d|"), rank), stratum_raw),
+      stratum_raw
+    ),
+    # fade the mirrored strata boxes to indicate repetition
+    alpha_stratum = ifelse(axis == "Original_Met_Name_end", 0.25, 1)
+  )
+
+# Palette for classes present
+classes <- sort(unique(lodes$HMDB_class))
+pal_named <- setNames(rep(base_pal, length.out = length(classes)), classes)
+
+# Plot
+p <- ggplot(lodes,
+            aes(x = axis,
+                stratum = stratum_plot,
+                alluvium = alluvium_id,
+                y = 1,
+                fill = HMDB_class,
+                order = ord)) +
+  geom_alluvium(alpha = 0.6, knot.pos = 0.4) +
+  geom_stratum(aes(alpha = alpha_stratum),
+               width = 0.25, color = "grey30") +
+  scale_alpha_identity() +
+  geom_text(stat = "stratum",
+            aes(label = after_stat(gsub("^R\\d+\\|", "", stratum))),
+            size = 3, vjust = -0.2) +
+  scale_fill_manual(values = pal_named, drop = FALSE, na.value = "#BFBFBF") +
+  scale_x_discrete(labels = c("Matched\nMicrobial Met",
+                              "GF vs CONV\nDifferent?",
+                              "Top 20%\nGUTSY",
+                              "Included in\nFinal Panel",
+                              "Matched\nMicrobial Met")) +
+  labs(x = NULL, y = NULL,
+       title = "Alluvial Plot of Metabolite Selections",
+       subtitle = "Flow: Original_Met_Name → GF_vs_CONV_Different? → top_20_pc_gutsy → included_in_final_panel → Original_Met_Name",
+       fill = "HMDB Class") +
+  theme_minimal(base_size = 12) +
+  theme(
+    panel.grid = element_blank(),
+    axis.text.y = element_blank(),
+    plot.title.position = "plot"
+  )
+
+# Save
+ggsave("Figure_1_prelim_version.svg", p,
+       width = 12, height = 7, dpi = 300)
+```

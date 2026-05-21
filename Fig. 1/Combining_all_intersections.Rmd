@@ -1,0 +1,66 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-11"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+```
+
+Read in the three intersection tables.
+
+```{r}
+darst <- read.csv("Darst_Chen_intersection.txt", sep = '\t')
+menni <- read.csv("Menni_Chen_intersection.tsv", sep = '\t')
+dunn <- read.csv("Dunn_Chen_intersection.tsv", sep = '\t')
+```
+
+Columns desired in the output: 1) Study name, 2) Metabolite name in original study, 3) Up or down with age, 4) Matched microbial metabolite, 5) HMDB Matched microbial metabolite, 6) CAS Matched microbial metabolite.
+
+Reformat each table accordingly.
+
+```{r}
+# Darst
+darst$study <- 'Darst'
+darst$up_or_down <- ifelse(darst$B_age > 0, 'Up', 'Down')
+darst <- dplyr::select(darst, study, BIOCHEMICAL_Darst, up_or_down, name_Chen, HMDB, cas_Chen)
+darst$HMDB <- ifelse(darst$HMDB == 'HMDB0003374 (Darst); HMDB0000214 (Chen)',
+                     'HMDB0000214', darst$HMDB)
+colnames(darst) <- c("Study", "Original_Met_Name", "Up_or_down_with_age",
+                     "Matched_Microbial_Met", "HMDB_Microbial_Met", "CAS_Microbial_Met")
+
+# Menni
+menni$study <- 'Menni'
+menni$up_or_down <- ifelse(menni$Beta_age_Menni > 0, 'Up', 'Down')
+menni <- dplyr::select(menni, study, Metabolite_Menni, up_or_down, Name_Chen, HMDB_Chen, CAS_Chen)
+colnames(menni) <- c("Study", "Original_Met_Name", "Up_or_down_with_age",
+                     "Matched_Microbial_Met", "HMDB_Microbial_Met", "CAS_Microbial_Met")
+
+# Dunn
+dunn$study <- 'Dunn'
+dunn$up_or_down <- ifelse(dunn$Diff_Old_Minus_Young > 0, 'Up', 'Down')
+dunn <- dplyr::select(dunn, study, Metabolite_Dunn, up_or_down, Name_Chen, HMDB_Chen, CAS_Chen)
+colnames(dunn) <- c("Study", "Original_Met_Name", "Up_or_down_with_age",
+                     "Matched_Microbial_Met", "HMDB_Microbial_Met", "CAS_Microbial_Met")
+```
+
+Combine all.
+
+```{r}
+combined <- rbind(darst, dunn, menni)
+```
+
+How many unique metabolites are there (look at HMDB_Microbial_Met column)?
+
+```{r}
+length(unique(combined$HMDB_Microbial_Met))
+```
+
+Output table.
+
+```{r}
+write.table(combined, 'Darst_Menni_Dunn_Chen_intersection.tsv', sep = '\t', quote = FALSE, row.names = FALSE)
+```

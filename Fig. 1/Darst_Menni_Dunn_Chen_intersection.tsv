@@ -1,0 +1,115 @@
+Study	Original_Met_Name	Up_or_down_with_age	Matched_Microbial_Met	HMDB_Microbial_Met	CAS_Microbial_Met
+Darst	adenine	Up	Adenine hydrochloride	HMDB0000034	2922-28-3
+Darst	cytidine	Up	Cytidine	HMDB0000089	65-46-3
+Darst	citrate	Up	Citric acid	HMDB0000094	77-92-9
+Darst	choline	Up	Choline chloride	HMDB0000097	67-48-1
+Darst	xylose	Up	D-(+)-Xylose	HMDB0000098	58-86-6
+Darst	glucose	Up	D-(+)-Glucose anhydrous	HMDB0000122	50-99-7
+Darst	glycerol	Up	Glycerol	HMDB0000131	56-81-5
+Darst	fumarate	Up	Fumaric acid	HMDB0000134	110-17-8
+Darst	glycocholate	Up	Glycocholic acid hydrate	HMDB0000138	475-31-0
+Darst	glycerate	Up	L-(-)-Glyceric acid hemicalcium salt monohydrate	HMDB0000139	14028-63-8
+Darst	gentisate	Up	Gentisic acid	HMDB0000152	490-79-9
+Darst	malate	Up	L-(−)-Malic acid	HMDB0000156	97-67-6
+Darst	tyrosine	Up	L-Tyrosine	HMDB0000158	60-18-4
+Darst	phenylalanine	Up	L-Phenylalanine	HMDB0000159	63-91-2
+Darst	threonine	Down	L-Threonine	HMDB0000167	72-19-5
+Darst	mannose	Up	D-Mannose	HMDB0000169	3458-28-4
+Darst	histidine	Down	L-Histidine	HMDB0000177	71-00-1
+Darst	serine	Down	L-Serine	HMDB0000187	56-45-1
+Darst	phenylpyruvate	Down	2-Oxo-3-phenylpropanoic acid	HMDB0000205	156-06-9
+Darst	alpha-ketoglutarate	Up	2-Oxoglutaric acid	HMDB0000208	328-50-7
+Darst	pantothenate	Up	Sodium D-Pantothenate	HMDB0000210	867-81-2
+Darst	myo-inositol	Up	Myoinositol	HMDB0000211	87-89-8
+Darst	palmitate (16:0)	Up	Palmitic acid	HMDB0000220	57-10-3
+Darst	orotate	Up	Orotic acid anhydrous	HMDB0000226	65-86-1
+Darst	quinolinate	Up	2,3-Pyridinedicarboxylic acid	HMDB0000232	89-00-9
+Darst	mannitol/sorbitol	Up	D-Sorbitol	HMDB0000247	50-70-4
+Darst	urate	Up	Uric acid	HMDB0000289	69-93-2
+Darst	urea	Up	Urea	HMDB0000294	57-13-6
+Darst	uridine	Down	Uridine	HMDB0000296	58-96-8
+Darst	3-hydroxybutyrate (BHBA)	Up	3-hydroxybutyric acid	HMDB0000357	300-85-6
+Darst	allantoin	Up	Allantoin	HMDB0000462	97-59-6
+Darst	ribitol	Up	Ribitol	HMDB0000508	488-81-3
+Darst	cholate	Up	Cholic acid	HMDB0000619	81-25-4
+Darst	cytosine	Up	Cytosine	HMDB0000630	71-30-7
+Darst	glycodeoxycholate	Up	Glycodeoxycholic acid sodium salt	HMDB0000631	16409-34-0
+Darst	glycochenodeoxycholate	Up	Glycochenodeoxycholic acid sodium salt	HMDB0000637	16564-43-5
+Darst	glutamine	Up	L-Glutamine	HMDB0000641	56-85-9
+Darst	indolelactate	Down	Indolelactic acid	HMDB0000671	7417-65-4
+Darst	4-methyl-2-oxopentanoate	Down	Ketoleucine sodium salt	HMDB0000695	4502-00-5
+Darst	1-methylnicotinamide	Down	1-Methylnicotinamide chloride	HMDB0000699	1005-24-9
+Darst	hippurate	Up	Hippuric acid	HMDB0000714	495-69-2
+Darst	trans-4-hydroxyproline	Up	L-Hydroxyproline	HMDB0000725	51-35-4
+Darst	alpha-hydroxyisocaproate	Down	L-Leucic acid calcium salt	HMDB0000746	13748-90-8
+Darst	N-acetylalanine	Up	N-Acetyl-L-alanine	HMDB0000766	97-69-8
+Darst	nonadecanoate (19:0)	Up	Nonadecanoic acid	HMDB0000772	646-30-0
+Darst	myristate (14:0)	Up	Myristic acid	HMDB0000806	544-63-8
+Darst	N-acetylaspartate (NAA)	Up	N-Acetyl-L-aspartic acid	HMDB0000812	997-55-7
+Darst	stearate (18:0)	Up	Stearic acid	HMDB0000827	57-11-4
+Darst	citrulline	Up	L-Citrulline	HMDB0000904	372-75-8
+Darst	trimethylamine N-oxide	Up	Trimethylamine N-oxide	HMDB0000925	62637-93-8
+Darst	tryptophan	Down	L-Tryptophan	HMDB0000929	73-22-3
+Darst	taurochenodeoxycholate	Up	Sodium taurochenodeoxycholate	HMDB0000951	6009-98-9
+Darst	tartarate	Up	L-(+)-Tartaric acid	HMDB0000956	87-69-4
+Darst	N-formylmethionine	Up	N-Formyl-L-methionine	HMDB0001015	4289-98-9
+Darst	nicotinamide	Down	Niacinamide	HMDB0001406	98-92-0
+Darst	choline phosphate	Down	Phosphorylcholine chloride calcium salt tetrahydrate	HMDB0001565	72556-74-2
+Darst	imidazole propionate	Up	Imidazolepropionic acid	HMDB0002271	1074-59-5
+Darst	oxalate (ethanedioate)	Up	Oxalic acid	HMDB0002329	144-62-7
+Darst	N-acetylserine	Up	N-Acetyl-DL-serine	HMDB0002931	97-14-3
+Darst	dimethyl sulfone	Up	Dimethyl sulfone	HMDB0004983	67-71-0
+Darst	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	HMDB0006344	28047-15-6
+Darst	p-cresol sulfate	Up	p-cresol sulfate	HMDB0011635	3233-58-7
+Darst	N-acetylmethionine	Up	N-Acetyl-L-methionine	HMDB0011745	65-82-7
+Darst	methyl indole-3-acetate	Up	Methyl 3-indolyacetate	HMDB0029738	1912-33-0
+Darst	ornithine	Up	Ornithine HCl	HMDB0000214	3184-13-2
+Dunn	2-aminomalonic acid	Up	Aminomalonic acid	HMDB0001147	1068-84-4
+Dunn	Citric acid	Up	Citric acid	HMDB0000094	77-92-9
+Dunn	Glycerol	Up	Glycerol	HMDB0000131	56-81-5
+Dunn	Indole-3-acetic acid	Up	Indoleacetic acid	HMDB0000197	87-51-4
+Dunn	Glyceric acid	Up	L-(-)-Glyceric acid hemicalcium salt monohydrate	HMDB0000139	14028-63-8
+Dunn	Alanine	Up	L-Alanine	HMDB0000161	56-41-7
+Dunn	Glutamine	Up	L-Glutamine	HMDB0000641	56-85-9
+Dunn	Lysine	Up	L-Lysine	HMDB0000182	56-87-1
+Dunn	Phenylalanine	Up	L-Phenylalanine	HMDB0000159	63-91-2
+Dunn	Proline	Up	L-Proline	HMDB0000162	147-85-3
+Dunn	Serine	Down	L-Serine	HMDB0000187	56-45-1
+Dunn	Tryptophan	Down	L-Tryptophan	HMDB0000929	73-22-3
+Dunn	Tyrosine	Up	L-Tyrosine	HMDB0000158	60-18-4
+Dunn	Sycllo-inositol and/or myo-inositol	Up	Myoinositol	HMDB0000211	87-89-8
+Dunn	Ornithine	Up	Ornithine HCl	HMDB0000214	3184-13-2
+Menni	allantoin	Up	Allantoin	HMDB0000462	97-59-6
+Menni	betaine	Up	Betaine	HMDB0000043	107-43-7
+Menni	mannose	Up	D-Mannose	HMDB0000169	3458-28-4
+Menni	glycerol	Up	Glycerol	HMDB0000131	56-81-5
+Menni	glycine	Up	Glycine	HMDB0000123	56-40-6
+Menni	glycochenodeoxycholate	Up	Glycochenodeoxycholic acid sodium salt	HMDB0000637	16564-43-5
+Menni	hippurate	Up	Hippuric acid	HMDB0000714	495-69-2
+Menni	hypoxanthine	Down	Hypoxanthine	HMDB0000157	68-94-0
+Menni	indoleacetate	Up	Indoleacetic acid	HMDB0000197	87-51-4
+Menni	alanine	Up	L-Alanine	HMDB0000161	56-41-7
+Menni	asparagine	Up	L-Asparagine	HMDB0000168	70-47-3
+Menni	carnitine	Down	L-Carnitine inner salt	HMDB0000062	541-15-1
+Menni	citrulline	Up	L-Citrulline	HMDB0000904	372-75-8
+Menni	glutamine	Up	L-Glutamine	HMDB0000641	56-85-9
+Menni	histidine	Down	L-Histidine	HMDB0000177	71-00-1
+Menni	isoleucine	Up	L-Isoleucine	HMDB0000172	73-32-5
+Menni	lysine	Up	L-Lysine	HMDB0000182	56-87-1
+Menni	phenylalanine	Up	L-Phenylalanine	HMDB0000159	63-91-2
+Menni	serine	Up	L-Serine	HMDB0000187	56-45-1
+Menni	tryptophan	Up	L-Tryptophan	HMDB0000929	73-22-3
+Menni	tyrosine	Up	L-Tyrosine	HMDB0000158	60-18-4
+Menni	valine	Up	L-Valine	HMDB0000883	72-18-4
+Menni	myo-inositol	Up	Myoinositol	HMDB0000211	87-89-8
+Menni	myristate (14:0)	Up	Myristic acid	HMDB0000806	544-63-8
+Menni	N-acetylalanine	Up	N-Acetyl-L-alanine	HMDB0000766	97-69-8
+Menni	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	HMDB0006344	28047-15-6
+Menni	nonadecanoate (19:0)	Up	Nonadecanoic acid	HMDB0000772	646-30-0
+Menni	ornithine	Up	Ornithine HCl	HMDB0000214	3184-13-2
+Menni	p-cresol sulfate	Up	p-cresol sulfate	HMDB0011635	3233-58-7
+Menni	pantothenate	Up	Sodium D-Pantothenate	HMDB0000210	867-81-2
+Menni	pyruvate	Up	Sodium pyruvate	HMDB0000243	113-24-6
+Menni	urea	Up	Urea	HMDB0000294	57-13-6
+Menni	uridine	Up	Uridine	HMDB0000296	58-96-8
+Menni	xanthine	Down	Xanthine	HMDB0000292	69-89-6

@@ -1,0 +1,73 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-13"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(readxl)
+library(writexl)
+```
+
+Read in original table.
+
+```{r}
+orig <- read_excel("Darst_Menni_Dunn_Chen_intersection_annotated.xlsx", col_types = c("text", "text", "text", "text", "numeric", "text", "text", "text"))
+```
+
+Select only columns that "matter."
+
+```{r}
+orig <- dplyr::select(orig, Original_Met_Name, Matched_Microbial_Met, HMDB_Microbial_Met, `r^2_GUTSY`, `GF_vs_CONV\r\nDifferent?`)
+```
+
+Collapse "duplicate" metabolites.
+
+```{r}
+deduplicated <- orig %>%
+  group_by(across(-Original_Met_Name)) %>%
+  summarise(
+    Original_Met_Name = paste(sort(unique(Original_Met_Name)), collapse = ", "),
+    .groups = "drop"
+  )
+```
+
+Replace HMDB0000357 with HMDB0000011 (more standard).
+
+```{r}
+deduplicated$HMDB_Microbial_Met <- ifelse(deduplicated$HMDB_Microbial_Met == 'HMDB0000357', 'HMDB0000011', deduplicated$HMDB_Microbial_Met)
+```
+
+Reorder columns.
+
+```{r}
+deduplicated <- dplyr::select(deduplicated,
+                              Original_Met_Name,
+                              Matched_Microbial_Met,
+                              HMDB_Microbial_Met,
+                              `r^2_GUTSY`,
+                              `GF_vs_CONV\r\nDifferent?`)
+```
+
+Add a few columns.
+
+```{r}
+# Top 20th percentile of GUTSY?
+deduplicated$top_20_pc_gutsy <- ifelse(is.na(deduplicated$`r^2_GUTSY`), "N",
+                                       ifelse(deduplicated$`r^2_GUTSY` >= 0.071, "Y", "N"))
+
+# Either criterion satisfied - GUTSY or GF?
+deduplicated$either_criterion_satisfied <- ifelse(deduplicated$top_20_pc_gutsy == "Y", "Y", ifelse(deduplicated$`GF_vs_CONV\r\nDifferent?` == "Y", "Y", "N"))
+
+# Included in final panel?
+deduplicated$included_in_final_panel <- ifelse(deduplicated$Matched_Microbial_Met %in% c("L-Alanine", "Uridine"), "N", deduplicated$either_criterion_satisfied)
+```
+
+Output.
+
+```{r}
+write_xlsx(deduplicated, "Darst_Menni_Dunn_Chen_intersection_annotated_dedup_orig.xlsx")
+```

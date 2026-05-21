@@ -1,0 +1,16 @@
+Metabolite_Dunn	Name_Chen	Diff_Old_Minus_Young	P.adj	HMDB_Chen	Source_Chen	CAS_Chen
+2-aminomalonic acid	Aminomalonic acid	0.059491130918858	0.039499015153537	HMDB0001147	Human/Bacteria	1068-84-4
+Citric acid	Citric acid	0.0455248768472907	0	HMDB0000094	Human/Food/Bacteria	77-92-9
+Glycerol	Glycerol	0.0244324636797724	5.41896754135962e-07	HMDB0000131	Human/Food/Bacteria	56-81-5
+Indole-3-acetic acid	Indoleacetic acid	0.0777552152202138	0.000126267686585857	HMDB0000197	At least Bacteria	87-51-4
+Glyceric acid	L-(-)-Glyceric acid hemicalcium salt monohydrate	0.029988290960452	0.0498555009047761	HMDB0000139	Human/Food/Bacteria	14028-63-8
+Alanine	L-Alanine	0.0709870593226877	7.53277995535484e-10	HMDB0000161	Human/Food/Bacteria	56-41-7
+Glutamine	L-Glutamine	0.736522111825442	0.0157626989351217	HMDB0000641	Human/Food/Bacteria	56-85-9
+Lysine	L-Lysine	0.0263856981981982	0.0359034575353003	HMDB0000182	Human/Food/Bacteria	56-87-1
+Phenylalanine	L-Phenylalanine	0.0185742986707792	0.0495017479426083	HMDB0000159	Human/Food/Bacteria	63-91-2
+Proline	L-Proline	0.0605209377831472	0.00896213477687968	HMDB0000162	Human/Food/Bacteria	147-85-3
+Serine	L-Serine	-0.036885290607471	0.0106890821796376	HMDB0000187	Human/Food/Bacteria	56-45-1
+Tryptophan	L-Tryptophan	-0.0449769271826154	0.000659657639952904	HMDB0000929	Human/Food/Bacteria	73-22-3
+Tyrosine	L-Tyrosine	0.100603586172957	0	HMDB0000158	Human/Food/Bacteria	60-18-4
+Sycllo-inositol and/or myo-inositol	Myoinositol	0.32160403905197	0	HMDB0000211	Human/Food/Bacteria	87-89-8
+Ornithine	Ornithine HCl	0.0977143541597432	0.000147421269348746	HMDB0000214	Human/Food/Bacteria	3184-13-2

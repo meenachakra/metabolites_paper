@@ -1,0 +1,66 @@
+BIOCHEMICAL_Darst	name_Chen	SUPER.PATHWAY_Darst	SUB.PATHWAY_Darst	Source_Chen	HMDB	CAS_Darst	cas_Chen	B_age	p_age
+adenine	Adenine hydrochloride	Nucleotide	Purine Metabolism, Adenine containing	Human/Food/Bacteria	HMDB0000034	73-24-5	2922-28-3	0.003041	4.1316829e-07
+cytidine	Cytidine	Nucleotide	Pyrimidine Metabolism, Cytidine containing	Human/Food/Bacteria	HMDB0000089	65-46-3	65-46-3	0.002753	0.0177812206
+citrate	Citric acid	Energy	TCA Cycle	Human/Food/Bacteria	HMDB0000094	77-92-9	77-92-9	0.001816	8.180952e-15
+choline	Choline chloride	Lipid	Phospholipid Metabolism	Human/Food/Bacteria	HMDB0000097	67-48-1	67-48-1	0.001611	4.4221351e-07
+xylose	D-(+)-Xylose	Carbohydrate	Pentose Metabolism	Food/Bacteria	HMDB0000098	609-06-3	58-86-6	0.003061	0.0138223627
+glucose	D-(+)-Glucose anhydrous	Carbohydrate	Glycolysis, Gluconeogenesis, and Pyruvate Metabolism	Human/Food/Bacteria	HMDB0000122	50-99-7	50-99-7	0.000606	0.0030405722
+glycerol	Glycerol	Lipid	Glycerolipid Metabolism	Human/Food/Bacteria	HMDB0000131	56-81-5	56-81-5	0.003218	2.5331934e-06
+fumarate	Fumaric acid	Energy	TCA Cycle	Human/Food/Bacteria	HMDB0000134	100-17-8	110-17-8	0.002397	0.0099546118
+glycocholate	Glycocholic acid hydrate	Lipid	Primary Bile Acid Metabolism	Bacteria	HMDB0000138	475-31-0;863-57-0	475-31-0	0.003958	0.0469161428
+glycerate	L-(-)-Glyceric acid hemicalcium salt monohydrate	Carbohydrate	Glycolysis, Gluconeogenesis, and Pyruvate Metabolism	Human/Food/Bacteria	HMDB0000139	600-19-1	14028-63-8	0.002387	2.0280124e-06
+gentisate	Gentisic acid	Amino Acid	Tyrosine Metabolism	Human/Food/Bacteria	HMDB0000152	490-79-9	490-79-9	0.003796	0.0038841604
+malate	L-(−)-Malic acid	Energy	TCA Cycle	Human/Food/Bacteria	HMDB0000156	6915-15-7	97-67-6	0.001796	1.7001246e-06
+tyrosine	L-Tyrosine	Amino Acid	Tyrosine Metabolism	Human/Food/Bacteria	HMDB0000158	60-18-4	60-18-4	0.000712	0.0253152712
+phenylalanine	L-Phenylalanine	Amino Acid	Phenylalanine Metabolism	Human/Food/Bacteria	HMDB0000159	63-91-2	63-91-2	0.000423	0.0395465086
+threonine	L-Threonine	Amino Acid	Glycine, Serine and Threonine Metabolism	Human/Food/Bacteria	HMDB0000167	72-19-5	72-19-5	-0.00151	2.72768e-05
+mannose	D-Mannose	Carbohydrate	Fructose, Mannose and Galactose Metabolism	Food/Bacteria	HMDB0000169	3458-28-4	3458-28-4	0.000921	0.0122471443
+histidine	L-Histidine	Amino Acid	Histidine Metabolism	Human/Food/Bacteria	HMDB0000177	5934-29-2	71-00-1	-0.00109	2.7774134e-06
+serine	L-Serine	Amino Acid	Glycine, Serine and Threonine Metabolism	Human/Food/Bacteria	HMDB0000187	56-45-1	56-45-1	-0.00092	0.0085081869
+phenylpyruvate	2-Oxo-3-phenylpropanoic acid	Amino Acid	Phenylalanine Metabolism	Human/Bacteria	HMDB0000205	156-06-9	156-06-9	-0.00275	2.58325e-05
+alpha-ketoglutarate	2-Oxoglutaric acid	Energy	TCA Cycle	Human/Food/Bacteria	HMDB0000208	305-72-6;328-50-7;22202-68-2	328-50-7	0.001493	0.0182976722
+pantothenate	Sodium D-Pantothenate	Cofactors and Vitamins	Pantothenate and CoA Metabolism	Human/Food/Bacteria	HMDB0000210	137-08-6	867-81-2	0.004123	5.1666519e-06
+myo-inositol	Myoinositol	Lipid	Inositol Metabolism	Human/Food/Bacteria	HMDB0000211	87-89-8	87-89-8	0.004965	9.023059e-12
+palmitate (16:0)	Palmitic acid	Lipid	Long Chain Fatty Acid	Human/Food/Bacteria	HMDB0000220	57-10-3	57-10-3	0.001802	0.0002550283
+orotate	Orotic acid anhydrous	Nucleotide	Pyrimidine Metabolism, Orotate containing	Human/Food/Bacteria	HMDB0000226	50887-69-9	65-86-1	0.003557	4.1951124e-07
+quinolinate	2,3-Pyridinedicarboxylic acid	Cofactors and Vitamins	Nicotinate and Nicotinamide Metabolism	Human/Food/Bacteria	HMDB0000232	89-00-9	89-00-9	0.004897	9.969658e-10
+mannitol/sorbitol	D-Sorbitol	Carbohydrate	Fructose, Mannose and Galactose Metabolism	Human/Food/Bacteria	HMDB0000247	NA	50-70-4	0.008234	2.6869543e-09
+urate	Uric acid	Nucleotide	Purine Metabolism, (Hypo)Xanthine/Inosine containing	Human/Bacteria	HMDB0000289	69-93-2;120K5305	69-93-2	0.000955	0.0103208384
+urea	Urea	Amino Acid	Urea cycle; Arginine and Proline Metabolism	Human/Food/Bacteria	HMDB0000294	57-13-6	57-13-6	0.004105	2.291282e-19
+uridine	Uridine	Nucleotide	Pyrimidine Metabolism, Uracil containing	Human/Food/Bacteria	HMDB0000296	58-96-8	58-96-8	-0.00089	0.0155531421
+3-hydroxybutyrate (BHBA)	3-hydroxybutyric acid	Lipid	Ketone Bodies	Human/Bacteria	HMDB0000357	625-72-9	300-85-6	0.00449	0.0013181033
+allantoin	Allantoin	Nucleotide	Purine Metabolism, (Hypo)Xanthine/Inosine containing	Human/Food/Bacteria	HMDB0000462	97-59-6	97-59-6	0.001239	9.6497674e-06
+ribitol	Ribitol	Carbohydrate	Pentose Metabolism	Human/Food/Bacteria	HMDB0000508	488-81-3	488-81-3	0.00133	0.0162905522
+cholate	Cholic acid	Lipid	Primary Bile Acid Metabolism	Human/Food/Bacteria	HMDB0000619	81-25-4	81-25-4	0.005275	0.0384412378
+cytosine	Cytosine	Nucleotide	Pyrimidine Metabolism, Cytidine containing	Human/Food/Bacteria	HMDB0000630	71-30-7	71-30-7	0.003215	0.0267039765
+glycodeoxycholate	Glycodeoxycholic acid sodium salt	Lipid	Secondary Bile Acid Metabolism	Bacteria	HMDB0000631	360-65-6	16409-34-0	0.00553	0.0356146528
+glycochenodeoxycholate	Glycochenodeoxycholic acid sodium salt	Lipid	Primary Bile Acid Metabolism	Bacteria	HMDB0000637	16564-43-5	16564-43-5	0.00347	0.0468071966
+glutamine	L-Glutamine	Amino Acid	Glutamate Metabolism	Human/Food/Bacteria	HMDB0000641	56-85-9	56-85-9	0.000528	0.0075039763
+indolelactate	Indolelactic acid	Amino Acid	Tryptophan Metabolism	At least Bacteria	HMDB0000671	832-97-3	7417-65-4	-0.00144	0.0098814441
+4-methyl-2-oxopentanoate	Ketoleucine sodium salt	Amino Acid	Leucine, Isoleucine and Valine Metabolism	Human/Food/Bacteria	HMDB0000695	816-66-0	4502-00-5	-0.00177	8.1470703e-06
+1-methylnicotinamide	1-Methylnicotinamide chloride	Cofactors and Vitamins	Nicotinate and Nicotinamide Metabolism	Human/Food/Bacteria	HMDB0000699	1005-24-9	1005-24-9	-0.00188	0.0374838101
+hippurate	Hippuric acid	Xenobiotics	Benzoate Metabolism	At least Bacteria	HMDB0000714	495-69-2	495-69-2	0.005124	0.0003101231
+trans-4-hydroxyproline	L-Hydroxyproline	Amino Acid	Urea cycle; Arginine and Proline Metabolism	Human/Food/Bacteria	HMDB0000725	51-35-4	51-35-4	0.001458	0.0111150315
+alpha-hydroxyisocaproate	L-Leucic acid calcium salt	Amino Acid	Leucine, Isoleucine and Valine Metabolism	Human/Food/Bacteria	HMDB0000746	10303-64-7	13748-90-8	-0.00182	0.0009387904
+N-acetylalanine	N-Acetyl-L-alanine	Amino Acid	Alanine and Aspartate Metabolism	Human/Food/Bacteria	HMDB0000766	97-69-8	97-69-8	0.001982	7.046441e-12
+nonadecanoate (19:0)	Nonadecanoic acid	Lipid	Long Chain Fatty Acid	Human/Food/Bacteria	HMDB0000772	646-30-0	646-30-0	0.001664	0.0001671893
+myristate (14:0)	Myristic acid	Lipid	Long Chain Fatty Acid	Human/Food/Bacteria	HMDB0000806	544-63-8	544-63-8	0.002388	0.0011443981
+N-acetylaspartate (NAA)	N-Acetyl-L-aspartic acid	Amino Acid	Alanine and Aspartate Metabolism	Human/Food/Bacteria	HMDB0000812	997-55-7;997-55-7	997-55-7	0.001575	5.3864597e-09
+stearate (18:0)	Stearic acid	Lipid	Long Chain Fatty Acid	Human/Food/Bacteria	HMDB0000827	57-11-4	57-11-4	0.001449	0.0001771625
+citrulline	L-Citrulline	Amino Acid	Urea cycle; Arginine and Proline Metabolism	Human/Food/Bacteria	HMDB0000904	372-75-8	372-75-8	0.001662	2.3988762e-06
+trimethylamine N-oxide	Trimethylamine N-oxide	Lipid	Phospholipid Metabolism	Human/Food/Bacteria	HMDB0000925	1184-78-7	62637-93-8	0.006329	1.162951e-10
+tryptophan	L-Tryptophan	Amino Acid	Tryptophan Metabolism	Human/Food/Bacteria	HMDB0000929	73-22-3	73-22-3	-0.00074	0.0063885214
+taurochenodeoxycholate	Sodium taurochenodeoxycholate	Lipid	Primary Bile Acid Metabolism	Human/Bacteria	HMDB0000951	6009-98-9	6009-98-9	0.005	0.0379123645
+tartarate	L-(+)-Tartaric acid	Xenobiotics	Food Component/Plant	Food/Bacteria	HMDB0000956	87-69-4;6106-24-7	87-69-4	0.007758	1.2187652e-06
+N-formylmethionine	N-Formyl-L-methionine	Amino Acid	Methionine, Cysteine, SAM and Taurine Metabolism	Human/Food/Bacteria	HMDB0001015	4289-98-9	4289-98-9	0.00203	8.3778351e-08
+nicotinamide	Niacinamide	Cofactors and Vitamins	Nicotinate and Nicotinamide Metabolism	Human/Food/Bacteria	HMDB0001406	98-92-0	98-92-0	-0.00423	2.303293e-07
+choline phosphate	Phosphorylcholine chloride calcium salt tetrahydrate	Lipid	Phospholipid Metabolism	Human/Food/Bacteria	HMDB0001565	72556-74-2	72556-74-2	-0.00231	0.0016006492
+imidazole propionate	Imidazolepropionic acid	Amino Acid	Histidine Metabolism	At least Bacteria	HMDB0002271	1074-59-5	1074-59-5	0.004125	0.0002704267
+oxalate (ethanedioate)	Oxalic acid	Cofactors and Vitamins	Ascorbate and Aldarate Metabolism	Food/Bacteria	HMDB0002329	144-62-7	144-62-7	0.002476	0.0002162092
+N-acetylserine	N-Acetyl-DL-serine	Amino Acid	Glycine, Serine and Threonine Metabolism	Human/Food/Bacteria	HMDB0002931	97-14-3	97-14-3	0.002842	4.33578e-14
+dimethyl sulfone	Dimethyl sulfone	Xenobiotics	Chemical	Human/Food/Bacteria	HMDB0004983	67-71-0	67-71-0	0.007258	0.0001734714
+phenylacetylglutamine	N2-phenylacetyl-L-glutamine	Peptide	Acetylated Peptides	Human/Bacteria	HMDB0006344	28047-15-6	28047-15-6	0.006936	2.573969e-11
+p-cresol sulfate	p-cresol sulfate	Xenobiotics	Benzoate Metabolism	At least Bacteria	HMDB0011635	3233-57-7	3233-58-7	0.004631	0.0007190616
+N-acetylmethionine	N-Acetyl-L-methionine	Amino Acid	Methionine, Cysteine, SAM and Taurine Metabolism	Human/Food/Bacteria	HMDB0011745	65-82-7	65-82-7	0.002758	1.2836794e-08
+methyl indole-3-acetate	Methyl 3-indolyacetate	Xenobiotics	Food Component/Plant	Food/Bacteria	HMDB0029738	1912-33-0	1912-33-0	0.008773	1.5823106e-08
+ornithine	Ornithine HCl	Amino Acid	Urea cycle; Arginine and Proline Metabolism	Human/Food/Bacteria	HMDB0003374 (Darst); HMDB0000214 (Chen)	3184-13-2	3184-13-2	0.0016	1.88376e-05

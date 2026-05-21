@@ -1,0 +1,89 @@
+---
+title: "Untitled"
+output: html_document
+date: '2023-08-23'
+---
+
+Read in the Darst associations.
+
+```{r}
+library(readxl)
+library(dplyr)
+library(stringr)
+
+darst_all_assoc <- read_excel("Darst_Table_S1.xlsx", sheet = "Results")
+```
+
+Filter to the metabolites that are significantly associated with age overall.
+
+```{r}
+darst_sig_assoc <- dplyr::filter(darst_all_assoc, p_age <= 0.05)
+```
+
+Filter out the unknown metabolites.
+
+```{r}
+darst_sig_assoc <- dplyr::filter(darst_sig_assoc, !(str_detect(darst_sig_assoc$BIOCHEMICAL, "^X - ")))
+```
+
+Keep only the relevant columns.
+
+```{r}
+darst_sig_assoc <- dplyr::select(darst_sig_assoc, BIOCHEMICAL, SUPER.PATHWAY, SUB.PATHWAY, CAS, PUBCHEM, HMDB, B_age, p_age)
+```
+
+Read in the list of microbial metabolites.
+
+```{r}
+microb_metab <- read_excel("Modified_Chen_Table_S3_Human_Metabolites_Tab.xlsx")
+
+# for the identifier column, if it starts with 'PUBCHEMCID' then strip off that part
+microb_metab <- microb_metab %>%
+  mutate(identifier = str_replace(identifier, "^PUBCHEMCID", ""))
+```
+
+Filter Darst table to those features whose:
+- HMDB ID is present in microb_metab$identifier, OR
+- PUBCHEM ID is present in microb_metab$identifier, OR
+- CAS is present in microb_metab$cas
+
+Rbind the resulting filtered tables, and remove duplicate rows.
+
+```{r}
+# noticed that Darst sig assoc uses two fewer zeros for the HMDB ID - add those in
+darst_sig_assoc <- darst_sig_assoc %>%
+  mutate(HMDB = str_replace(HMDB, "^HMDB(\\d{5})$", "HMDB00\\1"))
+
+darst_sig_assoc_hmdb <- dplyr::filter(darst_sig_assoc, HMDB %in% microb_metab$identifier)
+darst_sig_assoc_pubchem <- dplyr::filter(darst_sig_assoc, PUBCHEM %in% microb_metab$identifier)
+darst_sig_assoc_cas <- dplyr::filter(darst_sig_assoc, CAS %in% microb_metab$cas)
+
+# rbind the HMDB and CAS tables (because pubchem yielded nothing), remove duplicates
+darst_sig_assoc_matched_hmdb_or_cas <- rbind(darst_sig_assoc_hmdb, darst_sig_assoc_cas) %>% distinct()
+```
+
+That only added one metabolite!
+Merge Darst with microb_metab based on the HMDB column, then manually add on the last metabolite that matched on CAS.
+
+```{r}
+metab_to_add <- darst_sig_assoc_cas$BIOCHEMICAL[which(!(darst_sig_assoc_cas$BIOCHEMICAL %in% darst_sig_assoc_hmdb$BIOCHEMICAL))]
+# ornithine
+
+darst_sig_assoc_hmdb <- merge(darst_sig_assoc, microb_metab, by.x='HMDB', by.y='identifier')
+# reorder and rename columns
+darst_sig_assoc_hmdb <- dplyr::select(darst_sig_assoc_hmdb, BIOCHEMICAL, name, SUPER.PATHWAY, SUB.PATHWAY, Source, HMDB, CAS, cas, B_age, p_age)
+colnames(darst_sig_assoc_hmdb) <- c("BIOCHEMICAL_Darst", "name_Chen", "SUPER.PATHWAY_Darst",
+                                    "SUB.PATHWAY_Darst", "Source_Chen", "HMDB", "CAS_Darst",
+                                    "cas_Chen", "B_age", "p_age")
+
+ornithine_row <- data.frame(BIOCHEMICAL_Darst = "ornithine", name_Chen = "Ornithine HCl",
+                            SUPER.PATHWAY_Darst = "Amino Acid", SUB.PATHWAY_Darst = "Urea cycle; Arginine and Proline Metabolism",
+                            Source_Chen = "Human/Food/Bacteria", HMDB = "HMDB0003374 (Darst); HMDB0000214 (Chen)",
+                            CAS_Darst = "3184-13-2", cas_Chen = "3184-13-2",
+                            B_age = 0.0016,
+                            p_age = 1.88376e-05)
+
+darst_sig_assoc_matched_hmdb_or_cas <- rbind(darst_sig_assoc_hmdb, ornithine_row)
+
+write.table(darst_sig_assoc_matched_hmdb_or_cas, file='Darst_Chen_intersection.txt', sep='\t', quote=FALSE, row.names=FALSE)
+```

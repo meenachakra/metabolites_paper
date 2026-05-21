@@ -1,0 +1,45 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-12"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(readxl)
+```
+
+Read in required files.
+
+```{r}
+gutsy <- read.csv("GUTSY_Table_S5.tsv", sep = '\t')
+metabolites <- read_excel("Darst_Menni_Dunn_Chen_intersection_annotated.xlsx", col_types = c("text", "text", "text", "text", "numeric", "text", "text", "text"))
+```
+
+Which metabolites have "Y" in "GF_vs_CONV\r\nDifferent?" or are in the top 20th percentile for GUTSY variance explained?
+
+```{r}
+quantile(gutsy$r2, seq(0,1,by=0.1))
+
+metabolites <- dplyr::rename(metabolites, gf_vs_conv=`GF_vs_CONV\r\nDifferent?`, r2=`r^2_GUTSY`)
+
+metabolites_gf <- dplyr::filter(metabolites, gf_vs_conv == 'Y')
+metabolites_r2 <- dplyr::filter(metabolites, r2 >= 0.071)
+
+# bind rows
+metabolites_filtered <- rbind(metabolites_gf, metabolites_r2) 
+```
+
+Eliminate alanine and uridine (see Methods).
+
+```{r}
+metabolites_filtered <- dplyr::filter(metabolites_filtered, !(Matched_Microbial_Met %in% c("Uridine", "L-Alanine")))
+```
+
+Output.
+
+```{r}
+write.table(metabolites_filtered, 'final_panel_metabolites.tsv', sep = '\t', row.names = FALSE, quote = FALSE)
+```

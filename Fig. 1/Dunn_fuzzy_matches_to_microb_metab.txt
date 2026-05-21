@@ -1,0 +1,62 @@
+Original Name	Matched Name	Similarity Score
+Valine	L-Valine	95
+Glycerol	Glycerol	100
+Phosphate	Riboflavin 5'-Monophosphate Sodium Salt	90
+Glutamine	L-Glutamine	95
+Lactic acid	Acetic acid	91
+2-aminobutanoic acid	DL-Isocitric acid trisodium salt hydrate	86
+Ethanolamine	1,2-Dimyristoyl-sn-glycero-3-phosphoethanolamine	90
+Lysine	L-Lysine	95
+Alanine	L-Alanine	95
+2-hydroxybutanoic acid	DL-Isocitric acid trisodium salt hydrate	86
+3-hydroxybutanoic acid	3-Hydroxybenzoic acid	88
+Leucine	D-Leucine	95
+Octanoic acid	Octanoic acid	100
+Serine	L-Serine	95
+Glyceric acid	L-(-)-Glyceric acid hemicalcium salt monohydrate	90
+Proline	L-Proline	95
+Threonine	L-Threonine	95
+Erythritol and/or threitol	Retinol	64
+N-bromosuccimide	N-Acetyl-L-aspartic acid	86
+Erythronic acid and/or threonic acid	Fumaric acid	86
+2-aminomalonic acid	Aminomalonic acid	95
+Aspartic acid	L-Aspartic acid	95
+Cysteine	D-Cysteine	95
+Methionine	L-Methionine	95
+Creatinine	Urea	68
+Salicylic acid	DL-Isocitric acid trisodium salt hydrate	86
+Glutamic acid and/or pyroglutamic acid	Fumaric acid	86
+Dodecanoic acid	Nonadecanoic acid	88
+Phenylalanine	L-Phenylalanine	95
+Asparagine	L-Asparagine	95
+Ornithine	Ornithine HCl	95
+Glycerol-3-phosphate	Glycerol	90
+Citric acid	Citric acid	100
+Citrilline	L-Citrulline	82
+Tetradecanoic acid	DL-Isocitric acid trisodium salt hydrate	86
+4-deoxypyridoxine	1,4-Diaminobutane dihydrochloride	86
+Sycllo-inositol and/or myo-inositol	Myoinositol	82
+4-hydroxyphenyllactic acid	4-Hydroxyphenylacetic acid	96
+Methionine sulfoxide	S-(5'-Adenosyl)-L-methionine p-toluenesulfonate salt	86
+Pentadecanoic acid	DL-Isocitric acid trisodium salt hydrate	86
+Tyrosine	L-Tyrosine	95
+Hypoxanthine	Hypoxanthine	100
+Histidine	L-Histidine	95
+Hexadecanoic acid	Hexanoic acid	87
+Hexadecenoic acid	Hexanoic acid	87
+Indole-3-acetic acid	Indoleacetic acid	92
+Uric acid	Uric acid	100
+Octadecanoic acid	Nonadecanoic acid	88
+Octadecenoic acid	Octanoic acid	87
+Octadecadienoic acid	DL-Isocitric acid trisodium salt hydrate	86
+Indole-3-propionic acid	3-Indolepropionic acid	93
+Cystine	D-Cysteine	82
+Tryptophan	L-Tryptophan	95
+Caffeine	Adenosine	59
+Eicosatetraenoic acid	DL-Isocitric acid trisodium salt hydrate	86
+Monoglyceride (hexadecanoic acid)	Fumaric acid	86
+Docosahexaenoic acid	DL-Isocitric acid trisodium salt hydrate	86
+Acetic acid	Acetic acid	100
+Decanoic acid	Nonadecanoic acid	87
+Sucrose	L-Fucose	67
+Eicosanoic acid	DL-Isocitric acid trisodium salt hydrate	86

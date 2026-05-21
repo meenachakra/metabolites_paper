@@ -1,0 +1,45 @@
+Study	Original_Met_Name	Up_or_down_with_age	Matched_Microbial_Met	r2	gf_vs_conv	HMDB_Microbial_Met	CAS_Microbial_Met
+Darst	alpha-ketoglutarate	Up	2-Oxoglutaric acid	0.037	Y	HMDB0000208	328-50-7
+Darst	quinolinate	Up	2,3-Pyridinedicarboxylic acid	0.025	Y	HMDB0000232	89-00-9
+Darst	3-hydroxybutyrate (BHBA)	Up	3-hydroxybutyric acid	0.038	Y	HMDB0000357	300-85-6
+Darst	allantoin	Up	Allantoin	NA	Y	HMDB0000462	97-59-6
+Menni	allantoin	Up	Allantoin	NA	Y	HMDB0000462	97-59-6
+Darst	choline	Up	Choline chloride	0.014	Y	HMDB0000097	67-48-1
+Menni	glycine	Up	Glycine	0.048	Y	HMDB0000123	56-40-6
+Darst	hippurate	Up	Hippuric acid	0.179	Y	HMDB0000714	495-69-2
+Menni	hippurate	Up	Hippuric acid	0.179	Y	HMDB0000714	495-69-2
+Menni	hypoxanthine	Down	Hypoxanthine	0.008	Y	HMDB0000157	68-94-0
+Darst	indolelactate	Down	Indolelactic acid	0.02	Y	HMDB0000671	7417-65-4
+Darst	malate	Up	L-(‚àí)-Malic acid	0.024	Y	HMDB0000156	97-67-6
+Menni	carnitine	Down	L-Carnitine inner salt	0.041	Y	HMDB0000062	541-15-1
+Darst	citrulline	Up	L-Citrulline	0.012	Y	HMDB0000904	372-75-8
+Menni	citrulline	Up	L-Citrulline	0.012	Y	HMDB0000904	372-75-8
+Dunn	Lysine	Up	L-Lysine	0.011	Y	HMDB0000182	56-87-1
+Menni	lysine	Up	L-Lysine	0.011	Y	HMDB0000182	56-87-1
+Menni	valine	Up	L-Valine	0.066	Y	HMDB0000883	72-18-4
+Darst	methyl indole-3-acetate	Up	Methyl 3-indolyacetate	0.065	Y	HMDB0029738	1912-33-0
+Darst	N-acetylalanine	Up	N-Acetyl-L-alanine	0.01	Y	HMDB0000766	97-69-8
+Menni	N-acetylalanine	Up	N-Acetyl-L-alanine	0.01	Y	HMDB0000766	97-69-8
+Darst	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	0.315	Y	HMDB0006344	28047-15-6
+Menni	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	0.315	Y	HMDB0006344	28047-15-6
+Darst	nicotinamide	Down	Niacinamide	0.002	Y	HMDB0001406	98-92-0
+Darst	palmitate (16:0)	Up	Palmitic acid	0.027	Y	HMDB0000220	57-10-3
+Darst	pantothenate	Up	Sodium D-Pantothenate	0.037	Y	HMDB0000210	867-81-2
+Menni	pantothenate	Up	Sodium D-Pantothenate	0.037	Y	HMDB0000210	867-81-2
+Darst	trimethylamine N-oxide	Up	Trimethylamine N-oxide	0.017	Y	HMDB0000925	62637-93-8
+Darst	cholate	Up	Cholic acid	0.183	N	HMDB0000619	81-25-4
+Darst	glycodeoxycholate	Up	Glycodeoxycholic acid sodium salt	0.121	N	HMDB0000631	16409-34-0
+Darst	hippurate	Up	Hippuric acid	0.179	Y	HMDB0000714	495-69-2
+Menni	hippurate	Up	Hippuric acid	0.179	Y	HMDB0000714	495-69-2
+Darst	imidazole propionate	Up	Imidazolepropionic acid	0.186	N	HMDB0002271	1074-59-5
+Dunn	Indole-3-acetic acid	Up	Indoleacetic acid	0.127	N	HMDB0000197	87-51-4
+Menni	indoleacetate	Up	Indoleacetic acid	0.127	N	HMDB0000197	87-51-4
+Darst	glycerate	Up	L-(-)-Glyceric acid hemicalcium salt monohydrate	0.108	N	HMDB0000139	14028-63-8
+Dunn	Glyceric acid	Up	L-(-)-Glyceric acid hemicalcium salt monohydrate	0.108	N	HMDB0000139	14028-63-8
+Menni	isoleucine	Up	L-Isoleucine	0.1	N	HMDB0000172	73-32-5
+Darst	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	0.315	Y	HMDB0006344	28047-15-6
+Menni	phenylacetylglutamine	Up	N2-phenylacetyl-L-glutamine	0.315	Y	HMDB0006344	28047-15-6
+Darst	oxalate (ethanedioate)	Up	Oxalic acid	0.121	N	HMDB0002329	144-62-7
+Darst	p-cresol sulfate	Up	p-cresol sulfate	0.358	N	HMDB0011635	3233-58-7
+Menni	p-cresol sulfate	Up	p-cresol sulfate	0.358	N	HMDB0011635	3233-58-7
+Darst	urate	Up	Uric acid	0.077	N	HMDB0000289	69-93-2

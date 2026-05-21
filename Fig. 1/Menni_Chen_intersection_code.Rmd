@@ -1,0 +1,54 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-11"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(readxl)
+library(stringr)
+```
+
+Read in Menni table and the list we'll use to filter it.
+
+```{r}
+menni_all <- read_excel('Menni_Table_S2.xlsx')
+
+for_menni_filtering <- read_excel('Menni_fuzzy_matches_to_microb_metab_edited.xlsx', sheet = 'Highlighted_only')
+```
+
+Filter Menni to the metabolites that overlap with Chen list.
+
+```{r}
+menni_filtered <- merge(menni_all, for_menni_filtering, by.x = 'Metabolite',
+                   by.y = 'Original Name')
+menni_filtered <- dplyr::rename(menni_filtered, chen_name = `Matched Name`)
+```
+
+Read in Chen list.
+
+```{r}
+microb_metab <- read_excel("Modified_Chen_Table_S3_Human_Metabolites_Tab.xlsx")
+```
+
+Merge menni_filtered with microb_metab.
+
+```{r}
+menni_filtered <- merge(menni_filtered, microb_metab, by.x = 'chen_name',
+                        by.y = 'name')
+```
+
+Keep only the columns that matter, and output.
+
+```{r}
+menni_filtered <- dplyr::select(menni_filtered, Metabolite, chen_name, `Super pathway`,
+                                `Sub-pathway`, Beta, SE, p, identifier, Source, cas)
+
+colnames(menni_filtered) <- c("Metabolite_Menni", "Name_Chen", "Super.pathway_Menni", "Sub.pathway_Menni", "Beta_age_Menni", "SE_age_Menni", "p_age_Menni", "HMDB_Chen", "Source_Chen", "CAS_Chen")
+
+write.table(menni_filtered, 'Menni_Chen_intersection.tsv', sep = '\t',
+            quote = FALSE, row.names = FALSE)
+```

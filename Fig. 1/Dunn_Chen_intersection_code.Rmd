@@ -1,0 +1,59 @@
+---
+title: "Untitled"
+output: html_document
+date: '2023-08-24'
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(readxl)
+library(stringr)
+```
+
+Read in Dunn table and the list we'll use to filter it.
+
+```{r}
+dunn_all <- read.csv('reformatted_dunn_supp_mat_2.txt', sep = '\t')
+
+for_dunn_filtering <- read_excel('Dunn_fuzzy_matches_to_microb_metab_edited.xlsx', sheet = 'Highlighted_only')
+```
+
+Filter Dunn to the metabolites that overlap with Chen list.
+
+```{r}
+dunn_filtered <- merge(dunn_all, for_dunn_filtering, by.x = 'Metabolite',
+                   by.y = 'Original Name')
+dunn_filtered <- dplyr::rename(dunn_filtered, chen_name = `Matched Name`)
+```
+
+Read in Chen list.
+
+```{r}
+microb_metab <- read_excel("Modified_Chen_Table_S3_Human_Metabolites_Tab.xlsx")
+```
+
+Merge dunn_filtered with microb_metab.
+
+```{r}
+dunn_filtered <- merge(dunn_filtered, microb_metab, by.x = 'chen_name',
+                        by.y = 'name')
+```
+
+Filter further to those with P.adj <= 0.05.
+
+```{r}
+dunn_filtered <- dplyr::filter(dunn_filtered, P.adj <= 0.05)
+```
+
+Keep only the columns that matter, and output.
+
+```{r}
+dunn_filtered <- dplyr::select(dunn_filtered, Metabolite, chen_name, Diff.between.groups, P.adj, identifier, Source, cas)
+
+colnames(dunn_filtered) <- c("Metabolite_Dunn", "Name_Chen", "Diff_Old_Minus_Young", "P.adj", "HMDB_Chen", "Source_Chen", "CAS_Chen")
+
+write.table(dunn_filtered, 'Dunn_Chen_intersection.tsv', sep = '\t',
+            quote = FALSE, row.names = FALSE)
+```
