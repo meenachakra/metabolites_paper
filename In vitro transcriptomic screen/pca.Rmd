@@ -1,0 +1,153 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-07-21"
+---
+
+Let's install Sleuth before performing PCA on our RNA-seq data, in order to get normalized, abundance-filtered, and log-transformed TPM values which can be used as input for PCA. Sleuth can provide these from its object.
+
+```{r}
+#install.packages("BiocManager")
+#BiocManager::install("rhdf5")
+#install.packages("devtools")
+#devtools::install_github("pachterlab/sleuth")
+```
+
+Load necessary libraries.
+
+```{r}
+library("sleuth")
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library("readxl")
+library(grafify)
+```
+
+For each of the four batches, set up a table with the following columns:
+- Sample
+- Condition
+- Path (to Kallisto results)
+
+Based on:
+https://pachterlab.github.io/sleuth_walkthroughs/trapnell/analysis.html
+
+Write a function to do this.
+
+```{r}
+conditions_table <- function(batch_number, kallisto_dir) {
+  # Read in master spreadsheet
+  table <- read_excel("sample_info_transcriptomic_screen.xlsx")
+  
+  # Filter to batch of interest
+  table <- dplyr::filter(table, Batch == batch_number)
+  
+  # Remove unnecessary columns
+  table <- dplyr::select(table, `Sample name`, Treatment)
+  table <- dplyr::rename(table, sample = `Sample name`, condition = Treatment)
+  
+  # Add path
+  table$path <- file.path(kallisto_dir, paste0('kallisto_out_', table$sample))
+  
+  # Ensure that condition is a factor
+  table$condition <- factor(table$condition, levels=unique(table$condition))
+  return(table)
+}
+```
+
+Call the function for each batch.
+
+```{r}
+# Batch 1
+conditions_1 <- conditions_table(1, '/personal/path/to/batch1/kallisto/files')
+
+# Batch 2
+conditions_2 <- conditions_table(2, '/personal/path/to/batch2/kallisto/files')
+
+# Batch 3
+conditions_3 <- conditions_table(3, '/personal/path/to/batch3/kallisto/files')
+
+# Batch 4
+conditions_4 <- conditions_table(4, '/personal/path/to/batch4/kallisto/files')
+```
+
+Helper functions for PCA - df_for_pca and pca_function.
+
+```{r}
+# get normalized, abundance-filtered, log-transformed TPM values, in correct format for PCA analysis
+
+df_for_pca <- function(relevant_conditions_df) {
+  #so <- sleuth_prep(relevant_conditions_df, extra_bootstrap_summary = TRUE)
+  so <- sleuth_prep(relevant_conditions_df) # we don't need the extra bootstrap summary for PCA
+  norm_kallisto <- kallisto_table(so, use_filtered = TRUE, normalized = TRUE)
+  norm_kallisto <- select(norm_kallisto, target_id, sample, tpm)
+  norm_kallisto$tpm <- log(norm_kallisto$tpm + 0.5) # natural log and 0.5 because that's what sleuth does normally
+  norm_kallisto <- norm_kallisto %>% pivot_wider(names_from = target_id, values_from = tpm) %>% tibble::column_to_rownames(., "sample")
+  return(norm_kallisto)
+}
+
+# actually conduct PCA analysis based on the DF
+pca_function <- function(pca_df) {
+  return(prcomp(pca_df, scale = TRUE))
+}
+```
+
+Wrapper function for doing + plotting the PCA, based on one conditions table.
+
+```{r}
+pca_plotting <- function(conditions_df, fig_title, treatment_levels, ht=3.5, wd=6) {
+  
+  pca_result <- pca_function(df_for_pca(conditions_df))
+  
+  pc1_var <- round(100*summary(pca_result)$importance[2,1])
+  pc2_var <- round(100*summary(pca_result)$importance[2,2])
+  pca_result <- as.data.frame(pca_result$x[, 1:2]) %>% tibble::rownames_to_column(., var='sample') %>% merge(., conditions_df, by = 'sample') %>% dplyr::rename(., Treatment=condition)
+  
+  # specify factor levels provided in function call
+  pca_result$Treatment <- factor(pca_result$Treatment,
+                                 levels = treatment_levels)
+  
+  ggplot(pca_result, aes(x=PC1, y=PC2, color=Treatment)) + geom_point() +
+    labs(x = paste0('PC1 (', pc1_var, '% Variance Explained)'),
+         y = paste0('PC2 (', pc2_var, '% Variance Explained)'),
+         color = 'Treatment') + theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"), 
+        axis.title=element_text(size=14, color='black'), 
+        axis.text.x=element_text(size=12, color = "black"), 
+        axis.text.y=element_text(size=12, color='black'),
+        legend.text = element_text(size=12, color='black'),
+        legend.title = element_text(size=14, color='black')) 
+  
+  ggsave(fig_title, height=ht, width=wd)
+}
+```
+
+Make the specific PCAs we need for the paper.
+
+```{r}
+# Batch 1 all DMSO samples
+conditions_1_dmso <- dplyr::filter(conditions_1, condition %in% c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate"))
+pca_plotting(conditions_1_dmso, 'pca_plots/batch_1_dmso_samples.pdf',
+             c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate"))
+
+# Batch 1 all H2O samples
+conditions_1_h2o <- dplyr::filter(conditions_1, !(condition %in% c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate")))
+pca_plotting(conditions_1_h2o, 'pca_plots/batch_1_h2o_samples.pdf', unique(conditions_1_h2o$condition))
+
+# Batch 2 all samples
+pca_plotting(conditions_2, 'pca_plots/batch_2_all_samples.pdf', unique(conditions_2$condition))
+
+# Batch 3 all samples
+pca_plotting(conditions_3, 'pca_plots/batch_3_all_samples.pdf', unique(conditions_3$condition))
+
+# Batch 4 all DMSO samples
+conditions_4_dmso <- dplyr::filter(conditions_4, !(condition %in% c("H2O control", "LPS control", "Urate", "Lysine")))
+pca_plotting(conditions_4_dmso, 'pca_plots/batch_4_dmso_samples.pdf', unique(conditions_4_dmso$condition))
+
+# Batch 4 all H2O samples
+conditions_4_h2o <- dplyr::filter(conditions_4, condition %in% c("H2O control", "LPS control", "Urate", "Lysine"))
+pca_plotting(conditions_4_h2o, 'pca_plots/batch_4_h2o_samples.pdf', unique(conditions_4_h2o$condition))
+```

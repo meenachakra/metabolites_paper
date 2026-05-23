@@ -1,0 +1,244 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-07-20"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(AnnotationDbi)
+library(org.Hs.eg.db)
+library(readr)
+library(forcats)
+library(scales)
+```
+
+Function for converting gene list downloaded from KEGG to Ensembl gene IDs.
+
+We were originally using biomart for this task but as of 2026, Ensembl is having some server issues.
+
+```{r}
+conversion <- function(fpath) {
+  gene_list <- read_delim(
+    fpath,
+    delim = "\t",
+    col_names = c("pathway", "genes"),
+    show_col_types = FALSE
+  ) %>%
+    mutate(
+      entrez = sub("^hsa:", "", genes)
+    )
+
+  convert_result <- AnnotationDbi::select(
+    org.Hs.eg.db,
+    keys = unique(gene_list$entrez),
+    keytype = "ENTREZID",
+    columns = c("ENTREZID", "ENSEMBL", "SYMBOL")
+  )
+
+  return(list(
+    gene_list = gene_list,
+    convert_result = convert_result
+  ))
+}
+```
+
+Use the conversion function for the genes in the Alzheimer's and Parkinson's pathways.
+
+```{r}
+ad_genes <- conversion('alzheimers_pathway_genes.txt')
+pd_genes <- conversion('parkinsons_pathway_genes.txt')
+
+# Extract just the convert result
+ad_genes <- data.frame(ad_genes[["convert_result"]])
+pd_genes <- data.frame(pd_genes[["convert_result"]])
+ad_pd_genes <- rbind(ad_genes, pd_genes) %>% distinct()
+```
+
+Construct a dataframe that has, per metabolite: 1) the number of intersections between AD genes and DEGs, 2) the number of intersections between PD genes and DEGs, 3) the number of intersections between unique genes in either pathway and DEGs.
+
+```{r}
+# Initialize
+
+first_table <- read.csv('deseq2_outputs/batch1/pagln_sig_no_duplicates.txt', sep='\t')
+# Get rid of versioning
+first_table$GENEID <- sub("\\..*$", "", first_table$GENEID)
+
+# Calculate the number of DEGs intersecting ad_genes (unique entrez IDs only)
+
+first_table_ad_intersection <- merge(first_table, ad_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+ad_intersection <- length(unique(first_table_ad_intersection$ENTREZID))
+
+# Calculate the number of DEGs intersecting pd_genes (unique entrez IDs only)
+first_table_pd_intersection <- merge(first_table, pd_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+pd_intersection <- length(unique(first_table_pd_intersection$ENTREZID))
+
+# Calculate the number of DEGs intersecting the total list of ad/pd genes (unique entrez IDs only)
+first_table_ad_pd_intersection <- merge(first_table, ad_pd_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+# write out for future reference
+first_table_ad_pd_intersection <- dplyr::select(first_table_ad_pd_intersection,
+                                                -SYMBOL.y)
+first_table_ad_pd_intersection <- dplyr::rename(first_table_ad_pd_intersection,
+                                                SYMBOL = SYMBOL.x)
+
+write.table(first_table_ad_pd_intersection, 'ad_pd_genes_affected/pagln.txt', sep = '\t', row.names = FALSE, quote = FALSE)
+ad_pd_intersection <- length(unique(first_table_ad_pd_intersection$ENTREZID))
+
+num_ad_pd_degs_per_metab <- data.frame(metab=c('pagln'), batch_num='batch1', tot_genes_in_file=nrow(first_table), num_ad_degs=ad_intersection, num_pd_degs=pd_intersection, num_ad_pd_degs=ad_pd_intersection)
+
+batch1_metab <- c('cholate', 'indoleacetate', 'imp', 'pcs', 'hippurate')
+
+batch2_metab <- c('oxalate', 'glycerate', 'isoleucine', 'valine',
+            'glycine', 'carnitine', 'bhba', 'alpha_ketoglutarate')
+
+batch3_metab <- c('glycodeoxycholate', 'nicotinamide', 'pantothenate',
+            'quinolinate', 'malate', 'tmao', 'choline', 'citrulline')
+
+batch4_metab <- c('allantoin', 'methyl_indoleacetate', 'palmitate',
+            'indolelactate', 'nacetylalanine', 'hypoxanthine',
+            'urate', 'lysine')
+
+add_to_num_ad_pd_degs_per_metab <- function(batch, metab_name, df) {
+  
+  table_to_read <- read.csv(paste0('deseq2_outputs/', batch, '/', metab_name, '_sig_no_duplicates.txt'), sep='\t')
+  
+  table_to_read$GENEID <- sub("\\..*$", "", table_to_read$GENEID)
+  
+  # Calculate the number of DEGs intersecting ad_genes (unique entrez IDs only)
+  table_ad_intersection <- merge(table_to_read, ad_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+  ad_intersection <- length(unique(table_ad_intersection$ENTREZID))
+  
+  # Calculate the number of DEGs intersecting pd_genes (unique entrez IDs only)
+  table_pd_intersection <- merge(table_to_read, pd_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+  pd_intersection <- length(unique(table_pd_intersection$ENTREZID))
+  
+  # Calculate the number of DEGs intersecting the total list of ad/pd genes (unique entrez IDs only)
+  table_ad_pd_intersection <- merge(table_to_read, ad_pd_genes, by.x = "GENEID",
+                                     by.y = "ENSEMBL")
+  
+  # write out for future reference
+  table_ad_pd_intersection <- dplyr::select(table_ad_pd_intersection,
+                                                -SYMBOL.y)
+  table_ad_pd_intersection <- dplyr::rename(table_ad_pd_intersection,
+                                                SYMBOL = SYMBOL.x)
+  write.table(table_ad_pd_intersection, paste0('ad_pd_genes_affected/', metab_name, '.txt'), sep = '\t', row.names = FALSE, quote = FALSE)
+  
+  ad_pd_intersection <- length(unique(table_ad_pd_intersection$ENTREZID))
+  
+  new_row <- data.frame(
+  metab = metab_name,
+  batch_num = batch,
+  tot_genes_in_file = nrow(table_to_read),
+  num_ad_degs = ad_intersection,
+  num_pd_degs = pd_intersection,
+  num_ad_pd_degs = ad_pd_intersection)
+  
+  df <- dplyr::bind_rows(df, new_row)
+  
+  return(df)
+}
+
+for (metabolite in batch1_metab) {
+  num_ad_pd_degs_per_metab <- add_to_num_ad_pd_degs_per_metab('batch1', metabolite, num_ad_pd_degs_per_metab)
+}
+
+for (metabolite in batch2_metab) {
+  num_ad_pd_degs_per_metab <- add_to_num_ad_pd_degs_per_metab('batch2', metabolite, num_ad_pd_degs_per_metab)
+}
+
+for (metabolite in batch3_metab) {
+  num_ad_pd_degs_per_metab <- add_to_num_ad_pd_degs_per_metab('batch3', metabolite, num_ad_pd_degs_per_metab)
+}
+
+for (metabolite in batch4_metab) {
+  num_ad_pd_degs_per_metab <- add_to_num_ad_pd_degs_per_metab('batch4', metabolite, num_ad_pd_degs_per_metab)
+}
+```
+
+Assign the metabolites "nicer" names.
+
+```{r}
+nice_metab <- c('Phenylacetylglutamine', 'Cholic acid', 'Indoleacetic acid', 'Imidazole propionate', 'p-Cresol sulfate', 'Hippuric acid', 'Oxalic acid', 'Glyceric acid', 'Isoleucine', 'Valine', 'Glycine', 'Carnitine', '3-hydroxybutyrate', 'Alpha-ketoglutaric acid', 'Glycodeoxycholic acid', 'Nicotinamide', 'Pantothenic acid', 'Quinolinic acid', 'Malic acid', 'TMAO', 'Choline', 'Citrulline', 'Allantoin', 'Methyl-indoleacetic acid', 'Palmitic acid', 'Indolelactic acid', 'N-acetylalanine', 'Hypoxanthine', 'Uric acid', 'Lysine')
+
+num_ad_pd_degs_per_metab$nice_metab <- nice_metab
+```
+
+Now plot!
+
+```{r}
+plot_df <- num_ad_pd_degs_per_metab %>%
+  dplyr::select(nice_metab, num_ad_degs, num_pd_degs, num_ad_pd_degs) %>%
+  mutate(
+    nice_metab = fct_reorder(nice_metab, num_ad_pd_degs, .desc = TRUE)
+  )
+
+ggplot(plot_df, aes(x = nice_metab, y = num_ad_pd_degs)) +
+  geom_col(
+    fill = "#C2BEE8",
+    color = "#3B0F70",
+    linewidth = 0.25,
+    width = 0.75
+  ) +
+  geom_line(
+    aes(group = 1),
+    color = "#4B2E83",
+    linewidth = 0.7
+  ) +
+  geom_point(
+    color = "#3B0F70",
+    fill = "white",
+    shape = 21,
+    size = 1.8,
+    stroke = 0.5
+  ) +
+  geom_text(
+    aes(label = num_ad_pd_degs),
+    color = "black",
+    size = 3.1,
+    vjust = -0.45
+  ) +
+  scale_y_continuous(
+    trans = scales::pseudo_log_trans(sigma = 1),
+    breaks = c(0, 1, 3, 10, 30, 100, 300),
+    labels = c("0", "1", "3", "10", "30", "100", "300"),
+    expand = expansion(mult = c(0.02, 0.20))
+  ) +
+  labs(
+    x = NULL,
+    y = "# DEGs in AD/PD Pathways"
+  ) +
+  theme_classic(base_size = 11) +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1,
+      size = 11,
+      color = "black"
+    ),
+    axis.title.x = element_blank(),
+    axis.text.y = element_text(
+      size = 11,
+      color = "black"
+    ),
+    axis.title.y = element_text(
+      size = 12,
+      color = "black"
+    ),
+    legend.title = element_blank(),
+    legend.position = "none",
+    panel.grid = element_blank(),
+    panel.border = element_blank(),
+    axis.line.x = element_line(color = "black"),
+    axis.line.y = element_line(color = "black")
+  )
+ggsave('num_degs_in_ad_pd_kegg_pathways.pdf', width = 8, height = 3.5)
+```

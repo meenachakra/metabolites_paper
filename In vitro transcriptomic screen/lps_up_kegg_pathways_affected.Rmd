@@ -1,0 +1,88 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-07-19"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
+
+Plotting functions.
+
+```{r}
+# copied from https://joshuacook.netlify.app/post/integer-values-ggplot-axis/
+# A function factory for getting integer y-axis values.
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
+
+functional_enrichment_plotting <- function(results, src, figname, figtitle, exclude, nres=10, wid=8, ht=2) {
+  # filter to results from a particular source
+  results <- dplyr::filter(results, source == src)
+  
+  # filter to the top nres results
+  results <- results[seq(1,nres),]
+  
+  # filter the terms to exclude
+  results <- dplyr::filter(results, !(term_name %in% exclude))
+  
+  # make the term name into a factor
+  results$term_name <- factor(results$term_name, levels = results$term_name)
+  
+  ggplot(results, aes(x=term_name, y=intersection_size, fill=negative_log10_of_adjusted_p_value)) +
+    geom_bar(stat="identity") +
+    scale_x_discrete(limits = rev(levels(results$term_name))) + coord_flip() +
+    scale_fill_gradient(label = function(x) format(x, digits=3),
+                        low = "#b2b2d8", high = "#000080") +
+    theme_bw() + theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"),
+        axis.text.x=element_text(size=11, color = "black"), 
+        axis.text.y=element_text(size=11, color='black'),
+        axis.title.x=element_text(size=11, color='black'),
+        axis.title=element_blank(),
+        legend.title=element_text(size=10, color='black'),
+        legend.text=element_text(size=10, color='black'),
+        plot.title=element_text(size=12, color='black')) +
+    labs(y = 'Gene Count', title=figtitle, fill = "-log10(padj)") +
+    # I was going to put gene count on the x but I think I'll add it in R
+  scale_y_continuous(breaks = integer_breaks()) 
+  
+  ggsave(figname, width=wid, height=ht)
+}
+```
+
+Apply for LPS "up" gprofiler results.
+
+```{r}
+# Batch1
+batch1 <- read.csv('lps_up_gprofiler_kegg/batch1.csv')
+
+functional_enrichment_plotting(batch1, 'KEGG', 'lps_up_gprofiler_kegg/batch_1.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"))
+
+# Batch 2
+batch2 <- read.csv('lps_up_gprofiler_kegg/batch2.csv')
+
+functional_enrichment_plotting(batch2, 'KEGG', 'lps_up_gprofiler_kegg/batch_2.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"), ht=3)
+
+# Batch 3
+batch3 <- read.csv('lps_up_gprofiler_kegg/batch3.csv')
+
+functional_enrichment_plotting(batch3, 'KEGG', 'lps_up_gprofiler_kegg/batch_3.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"), ht=3)
+
+# Batch 4
+batch4 <- read.csv('lps_up_gprofiler_kegg/batch4.csv')
+
+functional_enrichment_plotting(batch4, 'KEGG', 'lps_up_gprofiler_kegg/batch_4.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"), ht=3)
+```

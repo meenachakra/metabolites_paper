@@ -1,0 +1,496 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-14"
+---
+
+Load necessary libraries.
+
+```{r}
+library("dplyr")
+library("tximport")
+library(ggplot2)
+library("DESeq2")
+library("rhdf5")
+library("apeglm")
+library("readxl")
+library(stringr)
+library(corrplot)
+library(Biostrings)
+```
+
+First, generate a data frame that links ensembl transcripts to ensembl genes - will need for tximport.
+
+Originally, I was using biomart. However, as of 2026, Ensembl is suffering from server issues.
+
+So, using the fasta file from which we built the kallisto index, might be safest.
+
+Downloaded it here (Homo_sapiens.GRCh38.cdna.all.fa.gz)
+
+```{r}
+fa <- readDNAStringSet("Homo_sapiens.GRCh38.cdna.all.fa.gz")
+
+headers <- names(fa)
+
+t2g <- tibble(
+  TXNAME = str_extract(headers, "^\\S+"),
+  GENEID = str_extract(headers, "gene:ENSG[0-9]+\\.[0-9]+"),
+  SYMBOL = str_extract(headers, "gene_symbol:[^ ]+")
+) %>%
+  mutate(
+    GENEID = sub("^gene:", "", GENEID),
+    SYMBOL = sub("^gene_symbol:", "", SYMBOL)
+  ) %>%
+  filter(!is.na(TXNAME), !is.na(GENEID)) %>%
+  distinct()
+
+# needed later when outputting DESeq2 results
+t2g_no_transcripts <- dplyr::select(t2g, GENEID, SYMBOL) %>% distinct()
+
+t2g <- dplyr::select(t2g, TXNAME, GENEID)
+```
+
+Read in the kallisto-generated estimated counts using tximport.
+
+https://bioconductor.org/packages/devel/bioc/vignettes/tximport/inst/doc/tximport.html#kallisto_with_TSV_files
+
+Write a tximport function that can read in the kallisto transcript-level counts for samples of interest.
+
+```{r}
+tximport_function <- function(sample_condition_df, kallisto_dir) {
+  # Construct file paths for each sample’s Kallisto output
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  names(files) <- sample_condition_df$sample
+  
+  # Read in the corresponding kallisto results and aggregate to gene level
+  txi.kallisto <- tximport(files, type = "kallisto", tx2gene = t2g, txIn = TRUE, txOut = FALSE)
+  # explicitly specifying TRUE/FALSE for txIn and txOut even though they're the default according to the tximport manual
+  # tx2gene needs transcript id as column 1, gene id as column 2
+  # we are ignoring Tx version because the t2g table doesn't have Tx version
+  
+  return(txi.kallisto)
+}
+```
+
+Write a DESeq2 function.
+
+```{r}
+deseq2_function <- function(sample_condition_df, conditions_of_interest, kallisto_dir, smallestGroupSize=3, a=0.10) {
+  # Filter sample_condition_df to conditions of interest
+  sample_condition_df <- dplyr::filter(sample_condition_df, condition %in% conditions_of_interest)
+  sample_condition_df$condition <- droplevels(sample_condition_df$condition)
+  
+  # Critical check to ensure correct directionality
+  stopifnot(levels(sample_condition_df$condition)[1] %in% c("DMSO control", "H2O control"))
+  stopifnot(length(levels(sample_condition_df$condition)) == 2)
+  
+  # Use the tximport function to enable getting the gene-level counts
+  txi <- tximport_function(sample_condition_df, kallisto_dir)
+  
+  # Apparently absolutely critical for analysis that the column names
+  # of the counts table from txi matches the order of samples in sample_condition_df
+  # (see here - https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input)
+  sample_condition_df <- tibble::column_to_rownames(sample_condition_df, var = 'sample')
+  stopifnot(all(colnames(txi$counts) == rownames(sample_condition_df)))
+  
+  # Create the DESeq2 dataset
+  # code from https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#tximport
+  dds <- DESeqDataSetFromTximport(txi, colData = sample_condition_df, design = ~condition)
+  
+  # Pre-filter low-count genes
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pre-filtering
+  keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+  dds <- dds[keep,]
+  
+  # Run DESeq2 analysis, return results with specified alpha level
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#quick-start
+  dds <- DESeq(dds)
+  
+  coef_name <- resultsNames(dds)[2]
+  message("Using coefficient: ", coef_name)
+  
+  stopifnot(
+  length(coef_name) == 1,
+  startsWith(coef_name, "condition"))
+  
+  dds_results <- results(dds, name = coef_name, alpha = a)
+  
+  dds_results <- lfcShrink(
+  dds,
+  coef = coef_name,
+  type = "apeglm",
+  res = dds_results)
+  
+  # Return results and DESeq2 object
+  return(list(results = dds_results, dds = dds))
+}
+```
+
+Read in all the conditions dfs, filter out outliers we previously identified, group relevant groups of controls, set factor levels so that DESeq2 will make the proper comparisons.
+
+```{r}
+# Batch 1
+batch1_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
+  dplyr::filter(., Batch == 1)
+batch1_conditions <- dplyr::select(batch1_conditions, `Sample name`, Treatment)
+batch1_conditions <- dplyr::rename(batch1_conditions, sample = `Sample name`, condition = Treatment)
+
+batch1_conditions$condition <- factor(batch1_conditions$condition, levels = unique(batch1_conditions$condition))
+
+# Batch 2
+batch2_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
+  dplyr::filter(., Batch == 2)
+batch2_conditions <- dplyr::select(batch2_conditions, `Sample name`, Treatment)
+batch2_conditions <- dplyr::rename(batch2_conditions, sample = `Sample name`, condition = Treatment)
+
+batch2_conditions$condition <- factor(batch2_conditions$condition, levels = unique(batch2_conditions$condition))
+
+# filter out outliers previously identified during PCA/QC analysis
+batch2_conditions <- dplyr::filter(batch2_conditions, !(sample %in% c('Oxalate_1', 'Carnitine_2')))
+
+# Batch 3
+batch3_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
+  dplyr::filter(., Batch == 3)
+batch3_conditions <- dplyr::select(batch3_conditions, `Sample name`, Treatment)
+batch3_conditions <- dplyr::rename(batch3_conditions, sample = `Sample name`, condition = Treatment)
+
+batch3_conditions$condition <- factor(batch3_conditions$condition, levels = unique(batch3_conditions$condition))
+
+# filter out outliers previously identified during PCA/QC analysis
+batch3_conditions <- dplyr::filter(batch3_conditions, !(sample %in% c('GDCA_1', 'Quin_2')))
+
+# Batch 4
+batch4_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
+  dplyr::filter(., Batch == 4)
+batch4_conditions <- dplyr::select(batch4_conditions, `Sample name`, Treatment)
+batch4_conditions <- dplyr::rename(batch4_conditions, sample = `Sample name`, condition = Treatment)
+
+batch4_conditions$condition <- factor(batch4_conditions$condition, levels = unique(batch4_conditions$condition))
+
+# filter out outliers previously identified during PCA/QC analysis
+batch4_conditions <- dplyr::filter(batch4_conditions, !(sample == 'DMSO_5'))
+```
+
+Function to output DEGs.
+
+Output multiple versions.
+1) no changes, just filter to the significant results (padj <= 0.1 and abs(LFC) >= 0.1)
+2) remove lines that are duplicates of each other besides the ENSG ID - basically this occurs when two different ENSG ID are mapped to the same gene
+3) "" + filter to LFC > 0 (upregulated genes)
+4) "" + filter to LFC < 0 (downregulated genes)
+
+Also output a file with *all* the results, not just the significant ones.
+
+```{r}
+output_degs <- function(dds_results, outdir, outfprefix, alpha=0.10) {
+  dds_results <- tibble::rownames_to_column(data.frame(dds_results), var = 'GENEID')
+  
+  dds_results <- merge(dds_results, t2g_no_transcripts, by = 'GENEID', all.x=TRUE, all.y=FALSE) # this adds the external gene names
+  
+  # Ensure the relevant columns are numeric
+  dds_results$padj <- as.numeric(dds_results$padj)
+  dds_results$log2FoldChange <- as.numeric(dds_results$log2FoldChange)
+  
+  # filter to the significant results
+  sig <- dplyr::filter(dds_results, padj <= alpha, abs(log2FoldChange) >= 0.1)
+  
+  # Version 1
+  outfname_1 <- paste0(outdir, outfprefix, '_sig.txt')
+  write.table(sig, outfname_1, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 2
+  outfname_2 <- paste0(outdir, outfprefix, '_sig_no_duplicates.txt')
+  dup_rows <- duplicated(sig[,-1])
+  cleaned_sig <- sig[!dup_rows,]
+  write.table(cleaned_sig, outfname_2, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 3
+  outfname_3 <- paste0(outdir, outfprefix, '_sig_no_duplicates_UP.txt')
+  write.table(dplyr::filter(cleaned_sig, log2FoldChange > 0),
+              outfname_3, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 4
+  outfname_4 <- paste0(outdir, outfprefix, '_sig_no_duplicates_DOWN.txt')
+  write.table(dplyr::filter(cleaned_sig, log2FoldChange < 0),
+              outfname_4, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 5
+  outfname_5 <- paste0(outdir, outfprefix, '_all_results.txt')
+  write.table(dds_results, outfname_5, sep='\t', row.names=FALSE, quote=FALSE)
+}
+```
+
+Run the DESeq2 function, and the function to output DEGs!
+
+For each batch, will have a wrapper that will make our analysis easier.
+
+Batch 1 wrapper.
+
+```{r}
+deseq2_wrapper_batch1 <- function(conditions_of_interest, fprefix, min_group_size=3) {
+  deseq2_output <- deseq2_function(batch1_conditions, conditions_of_interest, '/personal/path/to/batch1/kallisto/files', smallestGroupSize=min_group_size)
+  output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch1/', fprefix)
+  return(deseq2_output)
+}
+```
+
+Batch 2 wrapper.
+
+```{r}
+deseq2_wrapper_batch2 <- function(conditions_of_interest, fprefix, min_group_size=3) {
+  deseq2_output <- deseq2_function(batch2_conditions, conditions_of_interest, '/personal/path/to/batch2/kallisto/files', smallestGroupSize=min_group_size)
+  output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch2/', fprefix)
+  return(deseq2_output)
+}
+```
+
+Batch 3 wrapper.
+
+```{r}
+deseq2_wrapper_batch3 <- function(conditions_of_interest, fprefix, min_group_size=3) {
+  deseq2_output <- deseq2_function(batch3_conditions, conditions_of_interest, '/personal/path/to/batch3/kallisto/files', smallestGroupSize=min_group_size)
+  output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch3/', fprefix)
+  return(deseq2_output)
+}
+```
+
+Batch 4 wrapper.
+
+```{r}
+deseq2_wrapper_batch4 <- function(conditions_of_interest, fprefix, min_group_size=3) {
+  deseq2_output <- deseq2_function(batch4_conditions, conditions_of_interest, '/personal/path/to/batch4/kallisto/files', smallestGroupSize=min_group_size)
+  output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch4/', fprefix)
+  return(deseq2_output)
+}
+```
+
+Apply the wrappers!
+
+Batch 1.
+
+```{r}
+# PAGln
+pagln <- deseq2_wrapper_batch1(c('DMSO control', 'Phenylacetylglutamine'), 'pagln')
+
+# Cholate
+cholate <- deseq2_wrapper_batch1(c('DMSO control', 'Cholate'), 'cholate')
+
+# Indoleacetate
+indoleacetate <- deseq2_wrapper_batch1(c('DMSO control', 'Indoleacetate'), 'indoleacetate')
+
+# ImP
+imp <- deseq2_wrapper_batch1(c('H2O control', 'Imidazole propionate'), 'imp')
+
+# LPS
+lps_1 <- deseq2_wrapper_batch1(c('H2O control', 'LPS control'), 'lps')
+
+# pCS
+pcs <- deseq2_wrapper_batch1(c('H2O control', 'p-Cresol sulfate'), 'pcs')
+
+# Hippurate
+hippurate <- deseq2_wrapper_batch1(c('H2O control', 'Hippurate'), 'hippurate')
+```
+
+Batch 2.
+
+```{r}
+# Oxalate
+oxalate <- deseq2_wrapper_batch2(c('H2O control', 'Oxalate'), 'oxalate', min_group_size=2)
+
+# Glycerate
+glycerate <- deseq2_wrapper_batch2(c('H2O control', 'Glycerate'), 'glycerate')
+
+# Isoleucine
+isoleucine <- deseq2_wrapper_batch2(c('H2O control', 'Isoleucine'), 'isoleucine')
+
+# Valine
+valine <- deseq2_wrapper_batch2(c('H2O control', 'Valine'), 'valine')
+
+# Glycine
+glycine <- deseq2_wrapper_batch2(c('H2O control', 'Glycine'), 'glycine')
+
+# Carnitine
+carnitine <- deseq2_wrapper_batch2(c('H2O control', 'Carnitine'), 'carnitine', min_group_size=2)
+
+# LPS
+lps_2 <- deseq2_wrapper_batch2(c('H2O control', 'LPS control'), 'lps')
+
+# BHBA
+bhba <- deseq2_wrapper_batch2(c('H2O control', '3-hydroxybutyrate'), 'bhba')
+
+# Alpha-ketoglutarate
+alpha_ketoglutarate <- deseq2_wrapper_batch2(c('H2O control', 'Alpha-ketoglutarate'), 'alpha_ketoglutarate')
+```
+
+Batch 3.
+
+```{r}
+# Glycodeoxycholate
+glycodeoxycholate <- deseq2_wrapper_batch3(c('H2O control', 'Glycodeoxycholate'), 'glycodeoxycholate', min_group_size=2)
+
+# Nicotinamide
+nicotinamide <- deseq2_wrapper_batch3(c('H2O control', 'Nicotinamide'), 'nicotinamide')
+
+# Pantothenate
+pantothenate <- deseq2_wrapper_batch3(c('H2O control', 'Pantothenate'), 'pantothenate')
+
+# Quinolinate
+quinolinate <- deseq2_wrapper_batch3(c('H2O control', 'Quinolinate'), 'quinolinate', min_group_size=2)
+
+# Malate
+malate <- deseq2_wrapper_batch3(c('H2O control', 'Malate'), 'malate')
+
+# TMAO
+tmao <- deseq2_wrapper_batch3(c('H2O control', 'Trimethylamine N-oxide'), 'tmao')
+
+# LPS
+lps_3 <- deseq2_wrapper_batch3(c('H2O control', 'LPS control'), 'lps')
+
+# Choline
+choline <- deseq2_wrapper_batch3(c('H2O control', 'Choline'), 'choline')
+
+# Citrulline
+citrulline <- deseq2_wrapper_batch3(c('H2O control', 'Citrulline'), 'citrulline')
+```
+
+Batch 4.
+
+```{r}
+# Allantoin
+allantoin <- deseq2_wrapper_batch4(c('DMSO control', 'Allantoin'), 'allantoin')
+
+# Methyl-indoleacetate
+methyl_indoleacetate <- deseq2_wrapper_batch4(c('DMSO control', 'Methyl indole-3-acetate'), 'methyl_indoleacetate')
+
+# Palmitate
+palmitate <- deseq2_wrapper_batch4(c('DMSO control', 'Palmitate'), 'palmitate')
+
+# Indolelactate
+indolelactate <- deseq2_wrapper_batch4(c('DMSO control', 'Indolelactate'), 'indolelactate')
+
+# N-acetylalanine
+nacetylalanine <- deseq2_wrapper_batch4(c('DMSO control', 'N-acetylalanine'), 'nacetylalanine')
+
+# Hypoxanthine
+hypoxanthine <- deseq2_wrapper_batch4(c('DMSO control', 'Hypoxanthine'), 'hypoxanthine')
+
+# LPS
+lps_4 <- deseq2_wrapper_batch4(c('H2O control', 'LPS control'), 'lps')
+
+# Urate
+urate <- deseq2_wrapper_batch4(c('H2O control', 'Urate'), 'urate')
+
+# Lysine
+lysine <- deseq2_wrapper_batch4(c('H2O control', 'Lysine'), 'lysine')
+```
+
+Plot number of DEGs per metabolite (removing duplicates).
+
+```{r}
+# Initialize
+first_table <- read.csv('deseq2_outputs/batch1/pagln_sig_no_duplicates.txt', sep='\t')
+num_degs_per_metab_no_dups <- data.frame(metab=c('pagln'), num_degs=nrow(first_table))
+
+batch1_metab <- c('cholate', 'indoleacetate', 'imp', 'pcs', 'hippurate')
+# removed pagln because already accounted for it
+
+batch2_metab <- c('oxalate', 'glycerate', 'isoleucine', 'valine',
+            'glycine', 'carnitine', 'bhba', 'alpha_ketoglutarate')
+
+batch3_metab <- c('glycodeoxycholate', 'nicotinamide', 'pantothenate',
+            'quinolinate', 'malate', 'tmao', 'choline', 'citrulline')
+
+batch4_metab <- c('allantoin', 'methyl_indoleacetate', 'palmitate',
+            'indolelactate', 'nacetylalanine', 'hypoxanthine',
+            'urate', 'lysine')
+
+add_to_num_degs_per_metab_no_dups <- function(batch, metab_name, df) {
+  table_to_read <- read.csv(paste0('deseq2_outputs/', batch, '/', metab_name, '_sig_no_duplicates.txt'), sep='\t')
+  df <- rbind(df, c(metab=metab_name, num_degs=nrow(table_to_read)))
+  return(df)
+}
+
+for (metabolite in batch1_metab) {
+  num_degs_per_metab_no_dups <- add_to_num_degs_per_metab_no_dups('batch1', metabolite, num_degs_per_metab_no_dups)
+}
+
+for (metabolite in batch2_metab) {
+  num_degs_per_metab_no_dups <- add_to_num_degs_per_metab_no_dups('batch2', metabolite, num_degs_per_metab_no_dups)
+}
+
+for (metabolite in batch3_metab) {
+  num_degs_per_metab_no_dups <- add_to_num_degs_per_metab_no_dups('batch3', metabolite, num_degs_per_metab_no_dups)
+}
+
+for (metabolite in batch4_metab) {
+  num_degs_per_metab_no_dups <- add_to_num_degs_per_metab_no_dups('batch4', metabolite, num_degs_per_metab_no_dups)
+}
+
+stopifnot(length(unique(num_degs_per_metab_no_dups$metab)) == 30)
+
+num_degs_per_metab_no_dups$num_degs <- as.numeric(num_degs_per_metab_no_dups$num_degs)
+```
+
+Plot.
+
+```{r}
+metabolites <- c('Phenylacetylglutamine', 'Cholic acid', 'Indoleacetic acid', 'Imidazole propionate', 'p-Cresol sulfate', 'Hippuric acid', 'Oxalic acid*', 'Glyceric acid', 'Isoleucine', 'Valine', 'Glycine', 'Carnitine*', '3-hydroxybutyrate', 'Alpha-ketoglutaric acid', 'Glycodeoxycholic acid*', 'Nicotinamide', 'Pantothenic acid', 'Quinolinic acid*', 'Malic acid', 'Trimethylamine N-oxide', 'Choline', 'Citrulline', 'Allantoin', 'Methyl-indoleacetic acid', 'Palmitic acid', 'Indolelactic acid', 'N-acetylalanine', 'Hypoxanthine', 'Uric acid', 'Lysine')
+
+num_degs_per_metab_no_dups$nice_metab <- metabolites
+
+# Sort num_degs_per_metab_no_dups in reverse order
+num_degs_per_metab_no_dups <- num_degs_per_metab_no_dups[order(num_degs_per_metab_no_dups$num_degs, decreasing=TRUE),]
+# make nice_metab into factor
+num_degs_per_metab_no_dups$nice_metab <- factor(num_degs_per_metab_no_dups$nice_metab, levels = num_degs_per_metab_no_dups$nice_metab)
+
+ggplot(num_degs_per_metab_no_dups, aes(x=nice_metab, y=num_degs)) + geom_bar(stat='identity', fill='#66b7b7') + labs(y='# DEGs (DESeq2)') + theme_bw() + 
+    theme(axis.line = element_line(colour = "black"), 
+        axis.title.y=element_text(size=18, color='black'),
+        axis.title.x=element_blank(),
+        axis.text.x=element_text(size=16, color = "black", angle=90, hjust=1, vjust=0.5), 
+        axis.text.y=element_text(size=16, color='black'),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank()) + scale_y_log10() + geom_text(aes(label = num_degs), vjust = 0.5, hjust=1, angle=90, size = 6, color = 'black') 
+
+ggsave('num_degs_per_metabolite.pdf', height=6.5, width=11)
+```
+
+Corrplot - sanity check that same-solvent controls on different plates can be grouped.
+
+```{r}
+# Batch 1 - H2O controls on different plates
+batch_1_h2o <- tximport_function(dplyr::filter(batch1_conditions, condition == 'H2O control'), '/personal/path/to/batch1/kallisto/files')
+# Log transform the gene abundances
+abundances <- log(batch_1_h2o$abundance + 0.5) # using same log transformation we used for PCA
+correlation_matrix <- cor(abundances)
+pdf('corrplot/batch1.pdf', height=4, width=4)
+corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
+dev.off()
+
+# Batch 2 - same
+batch_2_h2o <- tximport_function(dplyr::filter(batch2_conditions, condition == 'H2O control'), '/personal/path/to/batch2/kallisto/files')
+# Log transform the gene abundances
+abundances <- log(batch_2_h2o$abundance + 0.5) # using same log transformation we used for PCA
+correlation_matrix <- cor(abundances)
+pdf('corrplot/batch2.pdf', height=4, width=4)
+corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
+dev.off()
+
+# Batch 3 - same
+batch_3_h2o <- tximport_function(dplyr::filter(batch3_conditions, condition == 'H2O control'), '/personal/path/to/batch3/kallisto/files')
+# Log transform the gene abundances
+abundances <- log(batch_3_h2o$abundance + 0.5) # using same log transformation we used for PCA
+correlation_matrix <- cor(abundances)
+pdf('corrplot/batch3.pdf', height=4, width=4)
+corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
+dev.off()
+
+# Batch 4 - DMSO controls on different plates
+batch_4_h2o <- tximport_function(dplyr::filter(batch4_conditions, condition == 'DMSO control'), '/personal/path/to/batch4/kallisto/files')
+# Log transform the gene abundances
+abundances <- log(batch_4_h2o$abundance + 0.5) # using same log transformation we used for PCA
+correlation_matrix <- cor(abundances)
+pdf('corrplot/batch4.pdf', height=4, width=4)
+corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
+dev.off()
+```
