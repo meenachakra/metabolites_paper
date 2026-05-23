@@ -56,7 +56,6 @@ functional_enrichment_plotting <- function(results, src, figname, figtitle, excl
         legend.text=element_text(size=10, color='black'),
         plot.title=element_text(size=12, color='black')) +
     labs(y = 'Gene Count', title=figtitle, fill = "-log10(padj)") +
-    # I was going to put gene count on the x but I think I'll add it in R
   scale_y_continuous(breaks = integer_breaks()) 
   
   ggsave(figname, width=wid, height=ht)
