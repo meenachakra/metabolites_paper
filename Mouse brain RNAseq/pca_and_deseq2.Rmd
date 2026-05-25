@@ -510,7 +510,7 @@ volcano <- function(deseq_results, fname, metab_name, ymax, thresh = 0.10,
     geom_text_repel(
       aes(label = label),
       na.rm = TRUE,
-      size = 2.6,
+      size = 3,
       color = "black",
       segment.size = 0.4,
       segment.color = "black",
