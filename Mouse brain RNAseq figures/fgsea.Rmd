@@ -1,0 +1,385 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-19"
+---
+
+I will consult this helpful tutorial: https://biostatsquid.com/fgsea-tutorial-gsea/
+
+```{r}
+library("fgsea")
+library(dplyr)
+library(ggplot2)
+
+# Set seed for reproducibility
+set.seed(123)
+```
+
+Prepare our list of background genes for TMAO.
+
+```{r}
+tmao_deseq2_res <- read.csv("deseq2_outputs/tmao_all_results.txt", sep = '\t')
+# Filter to genes with gene names and DESeq padj not NA (padj NA occurs sometimes in certain situations - https://bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pvaluesNA)
+tmao_deseq2_res <- dplyr::filter(tmao_deseq2_res, Gene_Name != '', !is.na(padj))
+# Define background genes
+tmao_bg <- tmao_deseq2_res$Gene_Name
+```
+
+Downloaded .gmt files from: https://www.gsea-msigdb.org/gsea/msigdb/mouse/collections.jsp
+
+Specifically, downloaded:
+
+MH: hallmark gene sets
+Reactome subset of CP (canonical pathways)
+
+Define function to prepare GMT file for fgsea.
+
+```{r}
+prepare_gmt <- function(gmt_file, bg_genes) {
+  # Read in file
+  gmt <- gmtPathways(gmt_file)
+  all_genes <- unique(unlist(gmt))
+  
+  # Convert gmt file to a matrix with genes as rows and values are 0 or 1 per pathway
+  mat <- matrix(NA, dimnames = list(all_genes, names(gmt)), nrow = length(all_genes), ncol = length(gmt))
+  for (i in 1:dim(mat)[2]){
+    mat[,i] <- as.numeric(all_genes %in% gmt[[i]])
+  }
+  
+  # Subset to genes in our bg_genes list
+  genes_in_bg_genes <- intersect(bg_genes, all_genes)
+  mat <- mat[genes_in_bg_genes,]
+  
+  # Need to convert to list
+  pathways_list <- list()
+  for (pathway in colnames(mat)) {
+    pathways_list[[pathway]] <- rownames(mat)[as.logical(mat[, pathway])]
+  }
+  
+  return(pathways_list)
+}
+```
+
+Apply the function - prepare the GMTs!
+
+```{r}
+mh_gmt <- prepare_gmt("mh.all.v2025.1.Mm.symbols.gmt", tmao_bg)
+reactome_gmt <- prepare_gmt("m2.cp.reactome.v2025.1.Mm.symbols.gmt", tmao_bg)
+```
+
+Prepare ranked gene list.
+
+To rank the genes, will use the ranking metric from the blog post above.
+
+"Here, I use the sign(df$log2fc)*(-log10(df$pval))) as a ranking metric.
+
+This way, the magnitude of the ranking will be given by the p value (since I use -log10(), the more significant a gene is differentially expressed, the larger that value will be). The sign of the ranking (positive or negative) will be given by the fold-change: upregulated genes will have positive rankings, downregulated genes will have negative rankings."
+
+Also supported by: https://www.nature.com/articles/s41596-018-0103-9
+https://doi.org/10.1038/s41596-018-0103-9
+"The gene list is then ranked by one or more of these values (e.g., −log10 P value multiplied by the sign of log-transformed fold-change)"
+
+```{r}
+tmao_deseq2_res$rankings <- sign(tmao_deseq2_res$log2FoldChange) * (-log10(tmao_deseq2_res$pvalue))
+
+# Realized there are some duplicated gene names --> get rid of those extra rows. Keep the row with the highest ranking
+tmao_deseq2_res <- tmao_deseq2_res %>%
+  group_by(Gene_Name) %>%
+  slice_max(order_by = abs(rankings), n = 1) %>%
+  ungroup()
+
+rankings_for_fgsea <- tmao_deseq2_res$rankings
+names(rankings_for_fgsea) <- tmao_deseq2_res$Gene_Name
+```
+
+fgsea function.
+
+```{r}
+fgsea_func <- function(prepared_gmt, ranked_genes,
+                       fname) {
+  result <- fgsea(pathways = prepared_gmt, stats = ranked_genes, minSize = 10, maxSize = 500)
+  
+  # Write out results
+  results <- as.data.frame(result)
+  results$leadingEdge <- sapply(results$leadingEdge, paste, collapse=",")
+  # order by absolute value of NES
+  results <- results[order(abs(results$NES), decreasing = TRUE), ]
+  write.table(results, fname, sep = '\t',
+              quote = FALSE, row.names = FALSE)
+  
+  return(result)
+}
+```
+
+Apply the function for each of our prepared GMTs!
+
+```{r}
+# MH
+mh_res_tmao <- fgsea_func(mh_gmt, rankings_for_fgsea,
+                     'fgsea_results/mh_results_tmao.txt')
+
+# Reactome
+reactome_res_tmao <- fgsea_func(reactome_gmt, rankings_for_fgsea,
+                      'fgsea_results/reactome_results_tmao.txt')
+```
+
+Now, do the same for GDCA!
+
+```{r}
+# Prepare background genes
+gdca_deseq2_res <- read.csv("deseq2_outputs/gdca_all_results.txt", sep = '\t')
+gdca_deseq2_res <- dplyr::filter(gdca_deseq2_res, Gene_Name != '', !is.na(padj))
+gdca_bg <- gdca_deseq2_res$Gene_Name
+
+# Prepare GMTs
+mh_gmt <- prepare_gmt("mh.all.v2025.1.Mm.symbols.gmt", gdca_bg)
+reactome_gmt <- prepare_gmt("m2.cp.reactome.v2025.1.Mm.symbols.gmt", gdca_bg)
+
+# Rankings
+gdca_deseq2_res$rankings <- sign(gdca_deseq2_res$log2FoldChange) * (-log10(gdca_deseq2_res$pvalue))
+
+gdca_deseq2_res <- gdca_deseq2_res %>%
+  group_by(Gene_Name) %>%
+  slice_max(order_by = abs(rankings), n = 1) %>%
+  ungroup()
+
+rankings_for_fgsea <- gdca_deseq2_res$rankings
+names(rankings_for_fgsea) <- gdca_deseq2_res$Gene_Name
+
+# MH
+mh_res_gdca <- fgsea_func(mh_gmt, rankings_for_fgsea,
+                     'fgsea_results/mh_results_gdca.txt')
+
+# Reactome
+reactome_res_gdca <- fgsea_func(reactome_gmt, rankings_for_fgsea,
+                      'fgsea_results/reactome_results_gdca.txt')
+```
+
+Make plots!
+
+First, define a helpful function.
+
+```{r}
+# from https://www.r-bloggers.com/2019/11/setting-axes-to-integer-values-in-ggplot2-2/
+# A function factory for getting integer y-axis values.
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
+```
+
+First plot - TMAO, MH results of interest.
+
+```{r}
+mh_res_tmao <- read.csv('fgsea_results/mh_results_tmao.txt', sep = '\t')
+mh_res_tmao <- dplyr::filter(mh_res_tmao, pathway %in% c("HALLMARK_TNFA_SIGNALING_VIA_NFKB", "HALLMARK_CHOLESTEROL_HOMEOSTASIS", "HALLMARK_REACTIVE_OXYGEN_SPECIES_PATHWAY", "HALLMARK_P53_PATHWAY", "HALLMARK_HYPOXIA", "HALLMARK_MTORC1_SIGNALING", "HALLMARK_OXIDATIVE_PHOSPHORYLATION", "HALLMARK_GLYCOLYSIS"))
+
+# Sanity check
+stopifnot(max(mh_res_tmao$padj) <= 0.05)
+
+# eliminate hallmark prefix
+mh_res_tmao$pathway <- substr(mh_res_tmao$pathway, 10, nchar(mh_res_tmao$pathway))
+
+# Convert to sentence case
+mh_res_tmao <- mh_res_tmao %>%
+  mutate(
+    pathway = case_when(
+      pathway == "TNFA_SIGNALING_VIA_NFKB" ~ "TNFA signaling via NFKB",
+      pathway == "CHOLESTEROL_HOMEOSTASIS" ~ "Cholesterol homeostasis",
+      pathway == "P53_PATHWAY" ~ "p53 pathway",
+      pathway == "REACTIVE_OXYGEN_SPECIES_PATHWAY" ~ "Reactive oxygen species pathway",
+      pathway == "HYPOXIA" ~ "Hypoxia",
+      pathway == "MTORC1_SIGNALING" ~ "mTORC1 signaling",
+      pathway == "OXIDATIVE_PHOSPHORYLATION" ~ "Oxidative phosphorylation",
+      pathway == "GLYCOLYSIS" ~ "Glycolysis"
+    )
+  )
+
+# Add a neglog10padj column
+mh_res_tmao$neglog10padj <- -log10(mh_res_tmao$padj)
+
+# put in order
+mh_res_tmao <- mh_res_tmao[order(abs(mh_res_tmao$NES), decreasing = TRUE), ]
+mh_res_tmao$pathway <- factor(mh_res_tmao$pathway,
+                             levels = mh_res_tmao$pathway)
+
+ggplot(mh_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(limits = rev(levels(mh_res_tmao$pathway))) + coord_flip() +
+  scale_fill_gradient(label = function(x) format(x, digits=3),
+                      low = "#b2b2d8", high = "#000080") +
+  theme_bw() + theme(panel.border = element_blank(), 
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(), 
+      axis.line = element_line(colour = "black"),
+      axis.text.x=element_text(size=8, color = "black"), 
+      axis.text.y=element_text(size=10, color='black'),
+      axis.title.x=element_text(size=10, color='black'),
+      axis.title=element_blank(),
+      legend.title=element_text(size=8, color='black'),
+      legend.text=element_text(size=8, color='black')) +
+  labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") +
+scale_y_continuous(breaks = integer_breaks()) 
+
+ggsave('fgsea_results/fgsea_mh_tmao.pdf', width = 4, height = 3)
+```
+
+Next - TMAO, REACTOME results of interest.
+
+```{r}
+reactome_res_tmao <- read.csv('fgsea_results/reactome_results_tmao.txt', sep = '\t')
+reactome_res_tmao <- dplyr::filter(reactome_res_tmao, pathway %in% c("REACTOME_CHOLESTEROL_BIOSYNTHESIS", "REACTOME_GABA_SYNTHESIS_RELEASE_REUPTAKE_AND_DEGRADATION", "REACTOME_INTEGRATION_OF_ENERGY_METABOLISM", "REACTOME_MRNA_SPLICING", "REACTOME_GABA_B_RECEPTOR_ACTIVATION", "REACTOME_MAPK_FAMILY_SIGNALING_CASCADES", "REACTOME_NEURONAL_SYSTEM", "REACTOME_SIGNALING_BY_NTRKS"))
+
+# Sanity check
+stopifnot(max(reactome_res_tmao$padj) <= 0.05)
+
+# eliminate prefix
+reactome_res_tmao$pathway <- substr(reactome_res_tmao$pathway, 10, nchar(reactome_res_tmao$pathway))
+
+# change pathways to sentence case
+reactome_res_tmao <- reactome_res_tmao %>%
+  mutate(pathway = case_when(
+   pathway == "CHOLESTEROL_BIOSYNTHESIS" ~ "Cholesterol biosynthesis",
+   pathway == "GABA_SYNTHESIS_RELEASE_REUPTAKE_AND_DEGRADATION" ~ "GABA synthesis, release,\nreuptake and degradation",
+   pathway == "INTEGRATION_OF_ENERGY_METABOLISM" ~ "Integration of energy metabolism",
+   pathway == "GABA_B_RECEPTOR_ACTIVATION" ~ "GABA_B receptor activation",
+   pathway == "MRNA_SPLICING" ~ "mRNA splicing",
+   pathway == "SIGNALING_BY_NTRKS" ~ "Signaling by NTRKs",
+   pathway == "MAPK_FAMILY_SIGNALING_CASCADES" ~ "MAPK family signaling cascades",
+   pathway == "NEURONAL_SYSTEM" ~ "Neuronal system"
+  ))
+
+# Add a neglog10padj column
+reactome_res_tmao$neglog10padj <- -log10(reactome_res_tmao$padj)
+
+reactome_res_tmao <- reactome_res_tmao[order(reactome_res_tmao$NES, decreasing = TRUE),]
+
+reactome_res_tmao$pathway <- factor(reactome_res_tmao$pathway, levels = reactome_res_tmao$pathway)
+
+ggplot(reactome_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(limits = rev(levels(reactome_res_tmao$pathway))) + coord_flip() +
+  scale_fill_gradient(label = function(x) format(x, digits=3),
+                      low = "#b2b2d8", high = "#000080") +
+  theme_bw() + theme(panel.border = element_blank(), 
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(), 
+      axis.line = element_line(colour = "black"),
+      axis.text.x=element_text(size=8, color = "black"), 
+      axis.text.y=element_text(size=10, color='black'),
+      axis.title.x=element_text(size=10, color='black'),
+      axis.title=element_blank(),
+      legend.title=element_text(size=8, color='black'),
+      legend.text=element_text(size=8, color='black')) +
+  labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") + scale_y_continuous(breaks = integer_breaks()) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "#008888", linewidth = 1) 
+
+ggsave('fgsea_results/fgsea_reactome_tmao.pdf', width = 4, height = 3)
+```
+
+Next, significant GDCA MH results.
+
+```{r}
+mh_res_gdca <- read.csv('fgsea_results/mh_results_gdca.txt', sep = '\t')
+mh_res_gdca <- dplyr::filter(mh_res_gdca,
+                             padj <= 0.05)
+# eliminate hallmark prefix
+mh_res_gdca$pathway <- substr(mh_res_gdca$pathway, 10, nchar(mh_res_gdca$pathway))
+
+# change pathway to sentence case
+mh_res_gdca <- mh_res_gdca %>% mutate(
+  pathway = case_when(
+    pathway == "TNFA_SIGNALING_VIA_NFKB" ~ "TNFA signaling via NFKB",
+    pathway == "HYPOXIA" ~ "Hypoxia",
+    pathway == "EPITHELIAL_MESENCHYMAL_TRANSITION" ~ "Epithelial mesenchymal transition",
+    pathway == "G2M_CHECKPOINT" ~ "G2M checkpoint"
+  )
+)
+
+# Add a neglog10padj column
+mh_res_gdca$neglog10padj <- -log10(mh_res_gdca$padj)
+# order by decreasing NES
+mh_res_gdca <- mh_res_gdca[order(mh_res_gdca$NES, decreasing = FALSE),]
+
+# Set order
+mh_res_gdca$pathway <- factor(mh_res_gdca$pathway,
+                              levels = mh_res_gdca$pathway)
+
+# Plot
+ggplot(mh_res_gdca, aes(x=pathway, y=NES, fill=neglog10padj)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(limits = rev(levels(mh_res_gdca$pathway))) + coord_flip() +
+  scale_fill_gradient(label = function(x) format(x, digits=3),
+                      low = "#b2b2d8", high = "#000080") +
+  theme_bw() + theme(panel.border = element_blank(), 
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(), 
+      axis.line = element_line(colour = "black"),
+      axis.text.x=element_text(size=8, color = "black"), 
+      axis.text.y=element_text(size=10, color='black'),
+      axis.title.x=element_text(size=10, color='black'),
+      axis.title=element_blank(),
+      legend.title=element_text(size=8, color='black'),
+      legend.text=element_text(size=8, color='black')) +
+  labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") +
+scale_y_continuous(breaks = integer_breaks()) + geom_hline(yintercept = 0, linetype = "dashed", color = "#008888", linewidth = 1) 
+
+ggsave('fgsea_results/fgsea_mh_gdca.pdf', width = 4, height = 2.5) 
+```
+
+Next, significant GDCA REACTOME results.
+
+```{r}
+reactome_res_gdca <- read.csv('fgsea_results/reactome_results_gdca.txt', sep = '\t')
+reactome_res_gdca <- dplyr::filter(reactome_res_gdca,
+                             padj <= 0.05)
+# eliminate prefix
+reactome_res_gdca$pathway <- substr(reactome_res_gdca$pathway, 10, nchar(reactome_res_gdca$pathway))
+
+# Change pathways to sentence case
+reactome_res_gdca <- reactome_res_gdca %>% mutate(
+  pathway = case_when(
+    pathway == "PKMTS_METHYLATE_HISTONE_LYSINES" ~
+      "PKMTs methylate histone lysines",
+    pathway == "PROCESSING_OF_CAPPED_INTRON_CONTAINING_PRE_MRNA" ~
+      "Processing of capped intron-\ncontaining pre-mRNA",
+    pathway == "EPIGENETIC_REGULATION_OF_GENE_EXPRESSION" ~
+      "Epigenetic regulation\nof gene expression",
+    pathway == "MRNA_SPLICING" ~ "mRNA splicing",
+    pathway == "CHROMATIN_ORGANIZATION" ~ "Chromatin organization"
+  )
+)
+
+# Add a neglog10padj column
+reactome_res_gdca$neglog10padj <- -log10(reactome_res_gdca$padj)
+# order by decreasing NES
+reactome_res_gdca <- reactome_res_gdca[order(reactome_res_gdca$NES, decreasing = TRUE),]
+
+# Set order
+reactome_res_gdca$pathway <- factor(reactome_res_gdca$pathway, levels = reactome_res_gdca$pathway)
+
+# Plot
+ggplot(reactome_res_gdca, aes(x=pathway, y=NES, fill=neglog10padj)) +
+  geom_bar(stat="identity") +
+  scale_x_discrete(limits = rev(levels(reactome_res_gdca$pathway))) + coord_flip() +
+  scale_fill_gradient(label = function(x) format(x, digits=3),
+                      low = "#b2b2d8", high = "#000080") +
+  theme_bw() + theme(panel.border = element_blank(), 
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(), 
+      axis.line = element_line(colour = "black"),
+      axis.text.x=element_text(size=8, color = "black"), 
+      axis.text.y=element_text(size=10, color='black'),
+      axis.title.x=element_text(size=10, color='black'),
+      axis.title=element_blank(),
+      legend.title=element_text(size=8, color='black'),
+      legend.text=element_text(size=8, color='black')) +
+  labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") +
+scale_y_continuous(breaks = integer_breaks())
+
+ggsave('fgsea_results/fgsea_reactome_gdca.pdf', width = 4, height = 2.5) 
+```

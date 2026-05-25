@@ -1,0 +1,165 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-24"
+---
+
+Load libraries.
+
+```{r}
+library(tximport)
+library(DESeq2)
+library(ggplot2)
+library(dplyr)
+library(readxl)
+library(vegan)
+library(pheatmap)
+library(biomaRt)
+```
+
+First step is to get rlog-stabilized counts of genes per sample. A lot of the below code is setup for that.
+
+Read in the data frame that came with the kallisto index, which links ensembl transcripts to ensembl genes.
+
+```{r}
+t2g <- read.csv('t2g.txt', sep = '\t', header = FALSE)
+# Rename columns
+t2g <- t2g %>%
+  dplyr::rename(
+    Transcript_ID = V1,
+    Gene_ID = V2,
+    Gene_Name = V3,
+    Transcript_Name = V4,
+    Chromosome = V5,
+    Start_Position = V6,
+    End_Position = V7,
+    Strand_Direction = V8
+  )
+
+t2g_no_transcripts <- dplyr::select(t2g, Gene_ID, Gene_Name) %>% distinct()
+
+# make a minimal version of t2g
+t2g <- dplyr::select(t2g, Transcript_ID, Gene_ID)
+```
+
+tximport function that can read in the kallisto transcript-level counts for samples of interest.
+
+```{r}
+tximport_function <- function(sample_condition_df, kallisto_dir) {
+  # Construct file paths for each sample’s Kallisto output
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  names(files) <- sample_condition_df$sample
+  
+  # Read in the corresponding kallisto results and aggregate to gene level
+  txi.kallisto <- tximport(files, type = "kallisto", tx2gene = t2g, txIn = TRUE, txOut = FALSE)
+  # explicitly specifying TRUE/FALSE for txIn and txOut even though they're the default according to the tximport manual
+  # tx2gene needs transcript id as column 1, gene id as column 2
+  
+  return(txi.kallisto)
+}
+```
+
+Apply it for TMAO samples!
+
+```{r}
+# Read in conditions table
+conditions <- read_excel('sample_info_mouse_brain_rnaseq.xlsx')
+
+# Make a "minimal" version, filter to TMAO samples, and filter out the outlier
+conditions_minimal <- dplyr::select(conditions, Experiment,
+                                    `Sample name`, Treatment)
+colnames(conditions_minimal) <- c("Experiment", "sample", "condition")
+tmao_conditions_minimal <- dplyr::filter(conditions_minimal, Experiment == 1) %>%
+  dplyr::select(., -Experiment)
+tmao_conditions_minimal <- dplyr::filter(tmao_conditions_minimal, sample != "TMAO_3")
+
+# Apply tximport function
+txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
+```
+
+To get rlog stabilized counts, need to run DESeq2.
+
+DESeq2 function below.
+
+```{r}
+deseq2_function <- function(sample_condition_df, txi, smallestGroupSize=3, a=0.10) {
+  # Apparently absolutely critical for analysis that the column names
+  # of the counts table from txi matches the order of samples in sample_condition_df
+  # (see here - https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input)
+  sample_condition_df <- tibble::column_to_rownames(sample_condition_df, var = 'sample')
+  stopifnot(all(colnames(txi$counts) == rownames(sample_condition_df)))
+  
+  # Create the DESeq2 dataset
+  # code from https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#tximport
+  dds <- DESeqDataSetFromTximport(txi, colData = sample_condition_df, design = ~condition)
+  
+  # Pre-filter low-count genes
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pre-filtering
+  keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+  dds <- dds[keep,]
+  
+  # Run DESeq2 analysis, return results with specified alpha level
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#quick-start
+  dds <- DESeq(dds)
+  # Extract the condition effect by name
+  cond_name <- grep("^condition_", resultsNames(dds), value = TRUE)
+  print(cond_name)
+  dds_results <- results(dds, name = cond_name, alpha = a)
+  # Shrink coefficients
+  dds_results <- lfcShrink(dds, coef=cond_name, type = "apeglm", res=dds_results)
+  
+  # Return results and DESeq2 object
+  return(list(results = dds_results, dds = dds))
+}
+```
+
+Run DESeq2 and get rlog-stabilized counts.
+
+```{r}
+tmao_conditions_minimal$condition <- factor(tmao_conditions_minimal$condition, levels = c("Saline", "TMAO"))
+deseq2_output <- deseq2_function(tmao_conditions_minimal, txi_tmao_samples, smallestGroupSize=3)
+# https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#extracting-transformed-values
+rlog_obj <- rlog(deseq2_output[[2]], blind = TRUE)
+rlog_counts <- data.frame(assay(rlog_obj))
+```
+
+Extract rlog counts specifically for our genes of interest.
+
+```{r}
+rlog_counts <- tibble::rownames_to_column(rlog_counts, var = "ensembl_gene_id")
+# Merge to get gene names
+rlog_counts <- merge(rlog_counts, t2g_no_transcripts,
+                     by.x = 'ensembl_gene_id',
+                     by.y = 'Gene_ID')
+# Define genes of interest
+gaba_a_receptor_genes <- c("Gabra1", "Gabra2", "Gabra6", "Gabrb1", "Gabrb2", "Gabrb3", "Gabrg1", "Gabrg2")
+gaba_a_receptor_genes_rlog <- dplyr::filter(rlog_counts, Gene_Name %in% gaba_a_receptor_genes)
+
+# Heatmap
+sample_names <- c("S_1", "S_2", "S_3", "S_4", "TMAO_1", "TMAO_2", "TMAO_4")
+gaba_a_receptor_genes_rlog <- dplyr::select(gaba_a_receptor_genes_rlog, Gene_Name, all_of(sample_names))
+  
+# Separate gene names
+gene_names <- gaba_a_receptor_genes_rlog$Gene_Name
+  
+# Remove gene name column for scaling
+gaba_a_receptor_genes_rlog <- as.matrix(gaba_a_receptor_genes_rlog[, -1])
+
+# Scale each row (z-score across samples)
+scaled_matrix <- t(apply(gaba_a_receptor_genes_rlog, 1, scale))
+  
+# Restore column names
+colnames(scaled_matrix) <- sample_names
+  
+# Add gene names back
+rownames(scaled_matrix) <- gene_names
+  
+pheatmap(scaled_matrix,
+         scale = "none",
+         show_rownames = TRUE,
+         show_colnames = TRUE,
+         filename = 'gaba_a_receptor_genes_heatmap.pdf',
+         cluster_cols = FALSE,
+         height = 4)
+  
+```

@@ -1,0 +1,578 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-19"
+---
+
+Load libraries.
+
+```{r}
+library("dplyr")
+library("tximport")
+library(ggplot2)
+library("DESeq2")
+library("rhdf5")
+library("apeglm")
+library("readxl")
+library(stringr)
+library(reshape2)
+library(ggpubr)
+library(ggrepel)
+```
+Read in the data frame that came with the kallisto index, which links ensembl transcripts to ensembl genes.
+
+```{r}
+t2g <- read.csv('t2g.txt', sep = '\t', header = FALSE)
+# Rename columns
+t2g <- t2g %>%
+  dplyr::rename(
+    Transcript_ID = V1,
+    Gene_ID = V2,
+    Gene_Name = V3,
+    Transcript_Name = V4,
+    Chromosome = V5,
+    Start_Position = V6,
+    End_Position = V7,
+    Strand_Direction = V8
+  )
+
+# will need this later when outputting DEGs
+t2g_no_transcripts <- dplyr::select(t2g, Gene_ID, Gene_Name) %>% distinct()
+
+# make a minimal version of t2g
+t2g <- dplyr::select(t2g, Transcript_ID, Gene_ID)
+```
+
+Read in the kallisto-generated estimated counts using tximport.
+
+https://bioconductor.org/packages/devel/bioc/vignettes/tximport/inst/doc/tximport.html#kallisto_with_TSV_files
+
+First, write a tximport function that can read in the kallisto transcript-level counts for samples of interest.
+
+```{r}
+tximport_function <- function(sample_condition_df, kallisto_dir) {
+  # Construct file paths for each sample’s Kallisto output
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  names(files) <- sample_condition_df$sample
+  
+  # Read in the corresponding kallisto results and aggregate to gene level
+  txi.kallisto <- tximport(files, type = "kallisto", tx2gene = t2g, txIn = TRUE, txOut = FALSE)
+  # explicitly specifying TRUE/FALSE for txIn and txOut even though they're the default according to the tximport manual
+  # tx2gene needs transcript id as column 1, gene id as column 2
+  
+  return(txi.kallisto)
+}
+```
+
+Now, actually apply it!
+
+```{r}
+# Read in conditions table
+conditions <- read_excel('sample_info_mouse_brain_rnaseq.xlsx')
+
+# Make two "minimal" versions of this conditions table
+# One for Experiment 1, one for Experiment 2
+conditions_minimal <- dplyr::select(conditions, Experiment,
+                                    `Sample name`, Treatment)
+colnames(conditions_minimal) <- c("Experiment", "sample", "condition")
+tmao_conditions_minimal <- dplyr::filter(conditions_minimal, Experiment == 1) %>%
+  dplyr::select(., -Experiment)
+expt2_conditions_minimal <- dplyr::filter(conditions_minimal, Experiment == 2) %>%
+  dplyr::select(., -Experiment)
+
+tmao_conditions_minimal$condition <- factor(tmao_conditions_minimal$condition, levels = c("Saline", "TMAO"))
+
+expt2_conditions_minimal$condition <- factor(expt2_conditions_minimal$condition, levels = c("Saline", "GDCA", "Saline + DMSO", "PA", "IAA"))
+
+# Apply tximport function
+txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
+txi_expt2_samples <- tximport_function(expt2_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+```
+
+Want to make a PCA plot for each of these DFs. Use the vst option from DESeq2.
+
+First - DESeq2 function.
+
+```{r}
+deseq2_function <- function(sample_condition_df, txi, smallestGroupSize=3, a=0.10) {
+  # Apparently absolutely critical for analysis that the column names
+  # of the counts table from txi matches the order of samples in sample_condition_df
+  # (see here - https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input)
+  sample_condition_df <- tibble::column_to_rownames(sample_condition_df, var = 'sample')
+  stopifnot(all(colnames(txi$counts) == rownames(sample_condition_df)))
+  
+  # Create the DESeq2 dataset
+  # code from https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#tximport
+  dds <- DESeqDataSetFromTximport(txi, colData = sample_condition_df, design = ~condition)
+  
+  # Pre-filter low-count genes
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pre-filtering
+  keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+  dds <- dds[keep,]
+  
+  # Run DESeq2 analysis, return results with specified alpha level
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#quick-start
+  dds <- DESeq(dds)
+  # Extract the condition effect by name
+  cond_name <- grep("^condition_", resultsNames(dds), value = TRUE)
+  print(cond_name)
+  dds_results <- results(dds, name = cond_name, alpha = a)
+  # Shrink coefficients
+  dds_results <- lfcShrink(dds, coef=cond_name, type = "apeglm", res = dds_results)
+  
+  # Return results and DESeq2 object
+  return(list(results = dds_results, dds = dds))
+}
+```
+
+Now - PCAs.
+
+https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#extracting-transformed-values 
+
+https://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#principal-component-plot-of-the-samples
+
+Want blind = TRUE because we're going for a non-biased PCA
+
+```{r}
+# TMAO samples
+deseq2_output_tmao_samples <- deseq2_function(tmao_conditions_minimal, txi_tmao_samples, smallestGroupSize=4)
+
+# variance stabilizing transformation
+vsd <- vst(deseq2_output_tmao_samples[[2]], blind = TRUE)
+pca_res <- plotPCA(vsd, returnData = TRUE)
+percentVar <- round(100 * attr(pca_res, "percentVar"))
+
+ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(condition), label=name)) + geom_point() + geom_text(nudge_x = 0.3, nudge_y = 0.3, show.legend = FALSE) +
+    labs(x = paste0('PC1 (', percentVar[1], '% Variance Explained)'),
+         y = paste0('PC2 (', percentVar[2], '% Variance Explained)'),
+         color = 'Condition') + theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"), 
+        axis.title=element_text(size=14, color='black'), 
+        axis.text.x=element_text(size=12, color = "black"), 
+        axis.text.y=element_text(size=12, color='black'),
+        legend.position = "top",
+        legend.text=element_text(size=12, color = 'black'),
+        legend.title=element_blank()) 
+  
+ggsave('expt1_samples_pca.pdf', width = 5, height = 5)
+
+# All other samples
+expt2_conditions_minimal_dummy <- expt2_conditions_minimal
+expt2_conditions_minimal_dummy$condition <- factor(c(rep('Dummy1', 10), rep('Dummy2', 10)), levels = c('Dummy1', 'Dummy2'))
+
+deseq2_output_expt2_samples <- deseq2_function(expt2_conditions_minimal_dummy, txi_expt2_samples, smallestGroupSize=10)
+
+vsd <- vst(deseq2_output_expt2_samples[[2]], blind = TRUE)
+pca_res <- plotPCA(vsd, returnData = TRUE)
+percentVar <- round(100 * attr(pca_res, "percentVar"))
+
+# Want to color by batch for final figure
+pca_res$batch <- paste0("Batch",
+                        substr(pca_res$name, nchar(pca_res$name), nchar(pca_res$name)))
+
+ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(batch), label=name)) + geom_point() + geom_text(nudge_x = 0.3, nudge_y = 0.3, show.legend = FALSE) +
+    labs(x = paste0('PC1 (', percentVar[1], '% Variance Explained)'),
+         y = paste0('PC2 (', percentVar[2], '% Variance Explained)'),
+         color = 'Condition') + theme_bw() + 
+  theme(panel.border = element_blank(), 
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(), 
+        axis.line = element_line(colour = "black"), 
+        axis.title=element_text(size=14, color='black'), 
+        axis.text.x=element_text(size=12, color = "black"), 
+        axis.text.y=element_text(size=12, color='black'),
+        legend.position = "top",
+        legend.text=element_text(size=12, color = 'black'),
+        legend.title=element_blank()) 
+  
+ggsave('expt2_samples_pca.pdf', width = 5, height = 5)
+```
+
+Conduct DESeq2 for TMAO outlier sample vs. other samples.
+
+```{r}
+tmao_conditions_minimal_outlier <- tmao_conditions_minimal
+tmao_conditions_minimal_outlier$condition <- ifelse(tmao_conditions_minimal_outlier$sample == 'TMAO_3', 'Outlier', 'Not Outlier')
+tmao_conditions_minimal_outlier$condition <- factor(tmao_conditions_minimal_outlier$condition, levels = c("Not Outlier", "Outlier"))
+deseq2_output_tmao_outlier_vs_others <- deseq2_function(tmao_conditions_minimal_outlier, txi_tmao_samples, smallestGroupSize=1)
+```
+
+Function to output DESeq2 results.
+
+Output multiple versions.
+1) no changes, just filter to the significant results (padj <= 0.1 and abs(LFC) >= 0.1)
+2) "" + filter to LFC > 0 (upregulated genes)
+3) "" + filter to LFC < 0 (downregulated genes)
+
+Also output a file with *all* the results, not just the significant ones.
+
+```{r}
+output_degs <- function(dds_results, outdir, outfprefix, alpha=0.10) {
+  dds_results <- tibble::rownames_to_column(data.frame(dds_results), var = 'Gene_ID')
+  
+  dds_results <- merge(dds_results, t2g_no_transcripts, by = 'Gene_ID', all.x=TRUE, all.y=FALSE) # this adds the external gene names
+  
+  # ensure the relevant columns are numeric
+  dds_results$padj <- as.numeric(dds_results$padj)
+  dds_results$log2FoldChange <- as.numeric(dds_results$log2FoldChange)
+  
+  # add a column without the gene version
+  dds_results$Gene_ID_truncated <- sub("\\..*", "", dds_results$Gene_ID)
+  
+  # filter to the significant results
+  sig <- dplyr::filter(dds_results, padj <= alpha, abs(log2FoldChange) >= 0.1)
+  
+  # Version 1
+  outfname_1 <- paste0(outdir, outfprefix, '_sig.txt')
+  write.table(sig, outfname_1, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 2
+  outfname_2 <- paste0(outdir, outfprefix, '_sig_UP.txt')
+  write.table(dplyr::filter(sig, log2FoldChange > 0),
+              outfname_2, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 3
+  outfname_3 <- paste0(outdir, outfprefix, '_sig_DOWN.txt')
+  write.table(dplyr::filter(sig, log2FoldChange < 0),
+              outfname_3, sep='\t', row.names=FALSE, quote=FALSE)
+  
+  # Version 4
+  outfname_4 <- paste0(outdir, outfprefix, '_all_results.txt')
+  write.table(dds_results, outfname_4, sep='\t', row.names=FALSE, quote=FALSE)
+}
+```
+
+Output DEGs (and all DESeq2 results) for TMAO outlier sample vs. others.
+
+```{r}
+output_degs(deseq2_output_tmao_outlier_vs_others[[1]],
+            'deseq2_outputs/', 'tmao_outlier_vs_others')
+```
+
+Run DESeq2 - TMAO vs. saline samples - including the outlier - to generate the Cook's distance plot mentioned in the methods.
+
+```{r}
+deseq2_output_tmao_with_outlier <- deseq2_function(tmao_conditions_minimal, txi_tmao_samples, smallestGroupSize=4)
+
+dds_with_cooks <- deseq2_output_tmao_with_outlier[[2]]
+cooks <- data.frame(assays(dds_with_cooks)[["cooks"]])
+
+# Summarize mean and SEM per sample
+sample_cooks_df <- data.frame(
+  sample = colnames(cooks),
+  mean_cooks = apply(cooks, 2, mean, na.rm = TRUE),
+  sd_cooks = apply(cooks, 2, sd, na.rm = TRUE),
+  n_genes = apply(cooks, 2, function(x) sum(!is.na(x)))
+) %>%
+  mutate(
+    sem_cooks = sd_cooks / sqrt(n_genes)
+  ) %>%
+  arrange(desc(mean_cooks))
+
+sample_cooks_df$sample <- factor(sample_cooks_df$sample, levels = sample_cooks_df$sample)
+
+ggplot(sample_cooks_df, aes(x = sample, y = mean_cooks)) +
+  geom_col(width = 0.7, fill = "#008888") +
+  geom_errorbar(
+    aes(
+      ymin = mean_cooks - sem_cooks,
+      ymax = mean_cooks + sem_cooks
+    ),
+    width = 0.2
+  ) +
+  theme_classic() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, color = "black", size = 12),
+    axis.text.y = element_text(color = "black", size = 12),
+    axis.title.y = element_text(color = "black", size = 14)
+  ) +
+  labs(
+    x = NULL,
+    y = "Mean Cook's distance ± SEM",
+    title = "Mean Cook's distance per sample"
+  )
+
+ggsave("cooks_distance_tmao_samples.pdf", width = 5, height = 4)
+```
+
+Now run DESeq2 for TMAO excluding the outlier sample.
+
+```{r}
+# Fix conditions table
+tmao_conditions_minimal <- dplyr::filter(tmao_conditions_minimal,
+                                         sample != 'TMAO_3')
+tmao_conditions_minimal$condition <- factor(tmao_conditions_minimal$condition,
+                                            levels = c("Saline", "TMAO"))
+# Run tximport again
+txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
+# DESeq2
+deseq2_output_tmao <- deseq2_function(tmao_conditions_minimal, txi_tmao_samples, smallestGroupSize=3)
+# Output DESeq2 results
+output_degs(deseq2_output_tmao[[1]],
+            'deseq2_outputs/', 'tmao')
+```
+
+Volcano plot!
+
+```{r}
+tmao_res <- read.csv('deseq2_outputs/tmao_all_results.txt', sep='\t')
+
+# Filter out the genes with padj NA since they won't be shown in the volcano plot anyway
+tmao_res <- dplyr::filter(tmao_res, !is.na(padj))
+
+# Label a few genes
+tmao_res$Label <- ifelse(tmao_res$Gene_Name %in% c('Mir124a-1hg', 'Tia1', 'Arl4d', 'Leng8', 'Slc2a1', 'Srrm2', 'Eml5', 'Atp13a3', 'Per1', 'Amy1', 'Pnisr', 'Sacs', 'Tbce', 'Rbm39', 'Jun', 'Bfsp2', 'Dusp1'), tmao_res$Gene_Name, NA)
+
+# Define color categories
+tmao_res$color_category <- ifelse(tmao_res$padj <= 0.10 & tmao_res$log2FoldChange >= 0.1, "Upregulated", 
+                      ifelse(tmao_res$padj <= 0.10 & tmao_res$log2FoldChange <= -0.1, "Downregulated", "n.s."))
+
+# Volcano plot
+ggplot(tmao_res, aes(x = log2FoldChange, y = -log10(padj))) +
+  geom_point(aes(color = color_category), alpha = 0.6, size = 1.5) +
+  scale_color_manual(values = c("Upregulated" = "#9f329f", "Downregulated" = "#008888", "n.s." = "grey")) +
+  theme_bw() +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+  theme(legend.position = "none",
+        axis.text = element_text(size = 12, color = 'black'),
+        axis.title = element_text(size = 14, color = 'black'),
+        plot.title = element_text(size = 14, hjust = 0.5, color = 'black')) +
+  labs(x = "Log2 Fold Change vs. Control",
+       y = "-Log10 adjusted p-value",
+       title = "Volcano plot for TMAO (1.8 mg/kg)") +
+      geom_text_repel(aes(label = Label),
+                    na.rm = TRUE,
+                    size = 3,
+                    color = 'black',
+                    segment.size = 0.4,
+                    segment.color = "black",
+                    force = 1.5,
+                    direction = "both",
+                    box.padding = 0.5,
+                    point.padding = 0.3,
+                    min.segment.length = 0.1,
+                    max.overlaps = Inf)
+
+ggsave('volcano_plot_tmao.pdf', width = 4, height = 4)
+```
+
+Now move on to experiment 2 samples! First, apply tximport.
+
+```{r}
+# PA
+palmitate_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline + DMSO", "PA"))
+palmitate_conditions_minimal$condition <- ifelse(as.character(palmitate_conditions_minimal$condition) == "Saline + DMSO", "Saline_DMSO", as.character(palmitate_conditions_minimal$condition))
+palmitate_conditions_minimal$condition <- factor(palmitate_conditions_minimal$condition, levels = c("Saline_DMSO", "PA"))
+txi_pa_samples <- tximport_function(palmitate_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+
+# IAA
+iaa_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline + DMSO", "IAA"))
+iaa_conditions_minimal$condition <- ifelse(as.character(iaa_conditions_minimal$condition) == "Saline + DMSO", "Saline_DMSO", as.character(iaa_conditions_minimal$condition))
+iaa_conditions_minimal$condition <- factor(iaa_conditions_minimal$condition, levels = c("Saline_DMSO", "IAA"))
+txi_iaa_samples <- tximport_function(iaa_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+
+# GDCA
+gdca_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline", "GDCA"))
+gdca_conditions_minimal$condition <- factor(gdca_conditions_minimal$condition, levels = c("Saline", "GDCA"))
+txi_gdca_samples <- tximport_function(gdca_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+```
+
+For DESeq2, will need to incorporate batch information.
+
+```{r}
+deseq2_function_with_batch <- function(sample_condition_df, txi, smallestGroupSize=4, a=0.10) {
+  # Apparently absolutely critical for analysis that the column names
+  # of the counts table from txi matches the order of samples in sample_condition_df
+  # (see here - https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#count-matrix-input)
+  sample_condition_df <- tibble::column_to_rownames(sample_condition_df, var = 'sample')
+  stopifnot(all(colnames(txi$counts) == rownames(sample_condition_df)))
+  
+  # Create the DESeq2 dataset
+  # code from https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#tximport
+  # Also here
+  # https://bioconductor.org/packages/devel/bioc/vignettes/tximport/inst/doc/tximport.html#Downstream_DGE_in_Bioconductor
+  dds <- DESeqDataSetFromTximport(txi, colData = sample_condition_df,
+                                  design  = ~ batch + condition)
+  
+  # Pre-filter low-count genes
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pre-filtering
+  keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+  dds <- dds[keep,]
+  
+  # Run DESeq2 analysis, return results with specified alpha level
+  # https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#quick-start
+  dds <- DESeq(dds)
+  # Extract the condition effect by name
+  cond_name <- grep("^condition_", resultsNames(dds), value = TRUE)
+  dds_results <- results(dds, name = cond_name, alpha = a)
+  # Shrink coefficients
+  dds_results <- lfcShrink(dds, coef=cond_name, type = "apeglm", res=dds_results)
+  
+  print(cond_name)
+  
+  # Return results and DESeq2 object
+  return(list(results = dds_results, dds = dds))
+}
+```
+
+Incorporate batch info into the relevant conditions DFs.
+
+```{r}
+palmitate_conditions_minimal$batch <- paste0("Batch", substr(palmitate_conditions_minimal$sample, nchar(palmitate_conditions_minimal$sample), nchar(palmitate_conditions_minimal$sample)))
+
+iaa_conditions_minimal$batch <- paste0("Batch", substr(iaa_conditions_minimal$sample, nchar(iaa_conditions_minimal$sample), nchar(iaa_conditions_minimal$sample)))
+
+gdca_conditions_minimal$batch <- paste0("Batch", substr(gdca_conditions_minimal$sample, nchar(gdca_conditions_minimal$sample), nchar(gdca_conditions_minimal$sample)))
+```
+
+Apply the function and output DESeq2 results!
+
+```{r}
+deseq2_output_pa <- deseq2_function_with_batch(palmitate_conditions_minimal, txi_pa_samples)
+output_degs(deseq2_output_pa[[1]],
+            'deseq2_outputs/', 'pa')
+
+deseq2_output_iaa <- deseq2_function_with_batch(iaa_conditions_minimal, txi_iaa_samples)
+output_degs(deseq2_output_iaa[[1]],
+            'deseq2_outputs/', 'iaa')
+
+deseq2_output_gdca <- deseq2_function_with_batch(gdca_conditions_minimal, txi_gdca_samples)
+output_degs(deseq2_output_gdca[[1]],
+            'deseq2_outputs/', 'gdca')
+```
+
+Volcano plots! Make more efficient with a function.
+
+```{r}
+volcano <- function(deseq_results, fname, metab_name, ymax, thresh = 0.10,
+  wid = 4, ht = 4, label_genes = NULL) {
+
+  # Read in the file
+  deseq_results <- read.csv(deseq_results, sep = "\t")
+
+  # Filter to the non-NA results
+  deseq_results <- dplyr::filter(deseq_results, !is.na(padj))
+
+  # Add a -log10p column
+  deseq_results$neglog10p <- -log10(deseq_results$padj)
+
+  # Add a column for significance categorization
+  deseq_results$significance <- ifelse(
+    deseq_results$padj <= thresh & deseq_results$log2FoldChange >= 0.1,
+    "Upregulated",
+    ifelse(
+      deseq_results$padj <= thresh & deseq_results$log2FoldChange <= -0.1,
+      "Downregulated",
+      "n.s."
+    )
+  )
+
+  # Define which genes to label
+  deseq_results$label <- ifelse(
+    deseq_results$Gene_ID %in% label_genes,
+    ifelse(
+      is.na(deseq_results$Gene_Name) | deseq_results$Gene_Name == "",
+      deseq_results$Gene_ID,
+      deseq_results$Gene_Name
+    ),
+    NA
+  )
+
+  # Base plot
+  p <- ggplot(deseq_results, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
+    geom_point(alpha = 0.6, size = 1.5) +
+    scale_color_manual(
+      values = c(
+        "Upregulated" = "#9f329f",
+        "Downregulated" = "#008888",
+        "n.s." = "grey"
+      )
+    ) +
+    geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+    geom_hline(yintercept = -log10(thresh), linetype = "dashed", color = "gray70", linewidth = 0.5) +
+    coord_cartesian(ylim = c(0, ymax)) +
+    theme_bw() +
+    theme(
+      legend.position = "none",
+      axis.text = element_text(size = 12, color = "black"),
+      axis.title = element_text(size = 14, color = "black"),
+      plot.title = element_text(size = 14, hjust = 0.5, color = "black")
+    ) +
+    labs(
+      x = "Log2 Fold Change vs. Control",
+      y = "-Log10 adjusted p-value",
+      title = paste0("Volcano plot for ", metab_name)
+    ) +
+    geom_text_repel(
+      aes(label = label),
+      na.rm = TRUE,
+      size = 2.6,
+      color = "black",
+      segment.size = 0.4,
+      segment.color = "black",
+      force = 1.5,
+      direction = "both",
+      box.padding = 0.5,
+      point.padding = 0.3,
+      min.segment.length = 0.1,
+      max.overlaps = Inf
+    )
+
+  ggsave(fname, plot = p, width = wid, height = ht)
+
+  return(p)
+}
+```
+
+Apply the function.
+
+```{r}
+# PA
+volcano('deseq2_outputs/pa_all_results.txt', 'volcano_plot_pa.pdf',
+        'PA (22.2 mg/kg)', 5,
+        label_genes = c(
+          "ENSMUSG00000022893.15",
+          "ENSMUSG00000023034.8",
+          "ENSMUSG00000026628.14",
+          "ENSMUSG00000033730.5",
+          "ENSMUSG00000038495.15",
+          "ENSMUSG00000039826.14",
+          "ENSMUSG00000120854.1",
+          "ENSMUSG00000121069.1"),
+wid = 4, ht = 4)
+
+# IAA
+volcano('deseq2_outputs/iaa_all_results.txt', 'volcano_plot_iaa.pdf',
+        'IAA (1.5 mg/kg)', 5,
+        label_genes = c(
+          "ENSMUSG00000009734.19",
+          "ENSMUSG00000040842.18",
+          "ENSMUSG00000120777.1"),
+wid = 4, ht = 4)
+
+# GDCA
+volcano('deseq2_outputs/gdca_all_results.txt', 'volcano_plot_gdca.pdf',
+        'GDCA (0.4 mg/kg)', 110,
+        label_genes = c("ENSMUSG00000090698.3",
+                        "ENSMUSG00000028195.5",
+                        "ENSMUSG00000055148.8",
+                        "ENSMUSG00000022893.15",
+                        "ENSMUSG00000038587.11",
+                        "ENSMUSG00000028645.12",
+                        "ENSMUSG00000042622.15",
+                        "ENSMUSG00000046223.11",
+                        "ENSMUSG00000044786.7",
+                        "ENSMUSG00000020044.14",
+                        "ENSMUSG00000020108.5",
+                        "ENSMUSG00000026628.14",
+                        "ENSMUSG00000054364.6",
+                        "ENSMUSG00000003032.9",
+                        "ENSMUSG00000048489.13",
+                        "ENSMUSG00000023067.15",
+                        "ENSMUSG00000020423.7"),
+wid = 4, ht = 4)
+```

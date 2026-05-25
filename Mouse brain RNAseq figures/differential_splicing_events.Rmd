@@ -1,0 +1,192 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-24"
+---
+Load libraries.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(writexl)
+library(ggrepel)
+```
+
+Read in JCEC data.
+
+```{r}
+a3ss_jcec <- read.csv('rmats_output/A3SS.MATS.JCEC.txt', sep = '\t')
+a5ss_jcec <- read.csv('rmats_output/A5SS.MATS.JCEC.txt', sep = '\t')
+mxe_jcec <- read.csv('rmats_output/MXE.MATS.JCEC.txt', sep = '\t')
+ri_jcec <- read.csv('rmats_output/RI.MATS.JCEC.txt', sep = '\t')
+se_jcec <- read.csv('rmats_output/SE.MATS.JCEC.txt', sep = '\t')
+```
+
+Define function for processing each of these tables - i.e., identifying which events are significant and removing columns that we don't need for this high-level analysis.
+
+```{r}
+df_processing <- function(df, splice_event_type) {
+  # Calculate average RNAseq read count in each group
+  # Helper function - compute IJC + SJC per sample, then average across samples
+  get_avg_rc <- function(ijc_col, sjc_col) {
+    mapply(function(ijc, sjc) {
+      ijc_vals <- as.numeric(unlist(strsplit(ijc, ",")))
+      sjc_vals <- as.numeric(unlist(strsplit(sjc, ",")))
+      sample_sums <- ijc_vals + sjc_vals
+      mean(sample_sums)
+    }, ijc_col, sjc_col)
+  }
+  
+  # Apply the helper function
+  df$avg_RC_1 <- get_avg_rc(df$IJC_SAMPLE_1, df$SJC_SAMPLE_1)
+  df$avg_RC_2 <- get_avg_rc(df$IJC_SAMPLE_2, df$SJC_SAMPLE_2)
+  
+  # Compute average PSI for each row for each group
+  df$mean_psi_vals_1 <- sapply(df$IncLevel1, function(x) {
+    mean(as.numeric(unlist(strsplit(x, ","))), na.rm=TRUE)
+  })
+  
+  df$mean_psi_vals_2 <- sapply(df$IncLevel2, function(x) {
+    mean(as.numeric(unlist(strsplit(x, ","))), na.rm=TRUE)
+  })
+  
+  # Now identify significant events in a separate DF called filtered_df
+  # At least 5 counts on average per group
+  filtered_df <- dplyr::filter(df, avg_RC_1 >= 5, avg_RC_2 >= 5)
+  
+  # Filter out if mean_psi_vals_1 < 0.05 and mean_psi_vals_2 < 0.05 
+  # Filter out if mean_psi_vals_1 > 0.95 and mean_psi_vals_2 > 0.95
+  filtered_df <- dplyr::filter(filtered_df, !( (mean_psi_vals_1 > 0.95 & mean_psi_vals_2 > 0.95) | (mean_psi_vals_1 < 0.05 & mean_psi_vals_2 < 0.05) ))
+  
+  # Filter out based on FDR threshold
+  filtered_df <- dplyr::filter(filtered_df, FDR <= 0.01)
+  
+  # Filter on IncLevelDifference - should be redundant with our rmats command given we specified cstat 0.1
+  filtered_df <- dplyr::filter(filtered_df, abs(IncLevelDifference) >= 0.10)
+  
+  # Add a "sig" column to our original DF based on filtered_df
+  df$sig <- ifelse(df$ID %in% filtered_df$ID,
+                   ifelse(df$IncLevelDifference > 0,
+                   'Up in Saline',
+                   'Up in TMAO'), 'n.s.')
+  
+  # Specify the splicing event type in case we want to combine processed dataframes later
+  df$splicing_event_type <- splice_event_type
+  
+  return(df)
+}
+```
+
+Apply the function.
+
+```{r}
+a5ss_jcec_processed <- df_processing(a5ss_jcec, "A5SS")
+a3ss_jcec_processed <- df_processing(a3ss_jcec, "A3SS")
+mxe_jcec_processed <- df_processing(mxe_jcec, "MXE")
+ri_jcec_processed <- df_processing(ri_jcec, "RI")
+se_jcec_processed <- df_processing(se_jcec, "SE")
+
+# Output all results
+write_xlsx(
+  list(
+    A5SS = a5ss_jcec_processed,
+    A3SS = a3ss_jcec_processed,
+    MXE = mxe_jcec_processed,
+    RI = ri_jcec_processed,
+    SE = se_jcec_processed
+  ),
+  path = 'diff_splicing_analysis_results.xlsx'
+)
+
+# Output just the significant events
+
+a5ss_jcec_processed_sig <- dplyr::filter(a5ss_jcec_processed, sig != "n.s.")
+a3ss_jcec_processed_sig <- dplyr::filter(a3ss_jcec_processed, sig != "n.s.")
+mxe_jcec_processed_sig <- dplyr::filter(mxe_jcec_processed, sig != "n.s.")
+ri_jcec_processed_sig <- dplyr::filter(ri_jcec_processed, sig != "n.s.")
+se_jcec_processed_sig <- dplyr::filter(se_jcec_processed, sig != "n.s.")
+
+write_xlsx(
+  list(
+    A5SS = a5ss_jcec_processed_sig,
+    A3SS = a3ss_jcec_processed_sig,
+    MXE = mxe_jcec_processed_sig,
+    RI = ri_jcec_processed_sig,
+    SE = se_jcec_processed_sig
+  ),
+  path = 'sig_diff_splicing_events.xlsx'
+)
+```
+
+Make volcano plot.
+
+```{r}
+# Combine all the events into one DF for plotting
+a5ss_for_plotting <- dplyr::select(a5ss_jcec_processed, ID, geneSymbol, splicing_event_type, IncLevelDifference, FDR, sig)
+a3ss_for_plotting <- dplyr::select(a3ss_jcec_processed, ID, geneSymbol, splicing_event_type, IncLevelDifference, FDR, sig)
+mxe_for_plotting <- dplyr::select(mxe_jcec_processed, ID, geneSymbol, splicing_event_type, IncLevelDifference, FDR, sig)
+se_for_plotting <- dplyr::select(se_jcec_processed, ID, geneSymbol, splicing_event_type, IncLevelDifference, FDR, sig)
+ri_for_plotting <- dplyr::select(ri_jcec_processed, ID, geneSymbol, splicing_event_type, IncLevelDifference, FDR, sig)
+
+for_plotting <- rbind(a5ss_for_plotting,
+                      a3ss_for_plotting,
+                      mxe_for_plotting,
+                      se_for_plotting,
+                      ri_for_plotting)
+
+# Add a -log10(FDR column)
+# First replace 0 FDR with a # with defined log
+for_plotting$FDR <- pmax(1E-15, for_plotting$FDR)
+for_plotting$neglog10fdr <- -log10(for_plotting$FDR)
+
+# Make volcano plot
+# Label points certain points
+for_plotting <- for_plotting %>%
+  dplyr::mutate(label = ifelse(ID %in% c(32311, 14275, 84336, 15051, 2592, 3427, 8897, 107347), paste(geneSymbol, splicing_event_type, sep = "_"),
+                        NA))
+
+# To make the plot small enough to manage in Illustrator, eliminate points with FDR = 1
+for_plotting_filtered <- dplyr::filter(for_plotting, FDR < 1)
+
+ggplot(for_plotting_filtered, aes(x = IncLevelDifference, y = neglog10fdr, color = sig)) +
+  geom_point(alpha = 0.7, size = 1) +
+  scale_color_manual(
+    values = c(
+      "Up in Saline" = "#9f329f",
+      "Up in TMAO"   = "#008888",
+      "n.s."         = "lightgray"
+    ),
+    breaks = c("Up in Saline", "Up in TMAO")
+  ) +
+  geom_text_repel(
+    aes(label = label),
+    na.rm = TRUE,
+    size = 3,
+    min.segment.length = 0,
+    show.legend = FALSE
+  ) +
+  geom_hline(yintercept = 2, linetype = "dashed", color = "gray70") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray70") +
+  labs(
+    x = "Delta PSI (Inclusion Level Difference: Saline-TMAO)",
+    y = "-log10(FDR) - capped at 15",
+    title = "Volcano Plot for Differential Splicing Analysis"
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = c(0.83, 0.73),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 8, color = "black"),
+    legend.background = element_rect(
+      color = "black",
+      linewidth = 0.3
+    ),
+    legend.key = element_rect(fill = "transparent", color = NA),
+    axis.text = element_text(size = 8, color = "black"),
+    axis.title = element_text(size = 10, color = "black"),
+    plot.title = element_text(size = 10, hjust = 0.5, color = "black")
+  )
+
+ggsave("volcano_plot_splicing.pdf", width = 4, height = 3)
+```
