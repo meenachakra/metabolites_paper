@@ -23,7 +23,7 @@ ri_jcec <- read.csv('rmats_output/RI.MATS.JCEC.txt', sep = '\t')
 se_jcec <- read.csv('rmats_output/SE.MATS.JCEC.txt', sep = '\t')
 ```
 
-Define function for processing each of these tables - i.e., identifying which events are significant and removing columns that we don't need for this high-level analysis.
+Define function for processing each of these tables - i.e., identifying which events are significant.
 
 ```{r}
 df_processing <- function(df, splice_event_type) {
