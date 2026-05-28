@@ -1,0 +1,205 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-09-21"
+---
+
+Load libraries.
+
+```{r setup, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library("DESeq2")
+```
+
+Read in counts data and format appropriately.
+
+```{r}
+counts <- read.table('All_Samples.counts', sep = '\t', header = TRUE)
+# Get rid of extraneous columns
+counts_only <- tibble::column_to_rownames(counts, var = 'Geneid')
+counts_only <- dplyr::select(counts_only,
+                             Brain_1_pooled.sorted.bam,
+                             Brain_2_pooled.sorted.bam,
+                             Brain_3_pooled.sorted.bam,
+                             Brain_4_pooled.sorted.bam,
+                             Brain_5_pooled.sorted.bam,
+                             Brain_6_pooled.sorted.bam,
+                             Brain_7_pooled.sorted.bam,
+                             Brain_8_pooled.sorted.bam)
+# Rename columns
+counts_only <- dplyr::rename(counts_only,
+                             S1=Brain_1_pooled.sorted.bam,
+                             G1=Brain_2_pooled.sorted.bam,
+                             S2=Brain_3_pooled.sorted.bam,
+                             G2=Brain_4_pooled.sorted.bam,
+                             S3=Brain_5_pooled.sorted.bam,
+                             G3=Brain_6_pooled.sorted.bam,
+                             S4=Brain_7_pooled.sorted.bam,
+                             G4=Brain_8_pooled.sorted.bam)
+# Turn into matrix
+counts_only <- as.matrix(counts_only)
+```
+
+Define metadata.
+
+```{r}
+metadata <- data.frame(sample = colnames(counts_only),
+                       condition = c("Saline",
+                                     "GDCA",
+                                     "Saline",
+                                     "GDCA",
+                                     "Saline",
+                                     "GDCA",
+                                     "Saline",
+                                     "GDCA"))
+metadata <- tibble::column_to_rownames(metadata, var = "sample")
+metadata$condition <- factor(metadata$condition, levels =
+                                  c("Saline", "GDCA"))
+```
+
+Now create the DESeq2 dataset and run DESeq2, with and without brain 3 (low TSS).
+
+```{r}
+# Including brain 3
+
+# Sanity check
+stopifnot(all(colnames(counts_only) == rownames(metadata)))
+# The below line is adapted from:
+# https://link.springer.com/protocol/10.1007/978-1-0716-1103-6_10
+dds <- DESeqDataSetFromMatrix(countData = counts_only,
+                      colData=metadata, design=~condition)
+# Pre-filter low-count peaks
+# https://www.bioconductor.org/packages/release/bioc/vignettes/DESeq2/inst/doc/DESeq2.html#pre-filtering
+keep <- rowSums(counts(dds) >= 10) >= 4 # 4 is smallest group size
+dds <- dds[keep,]
+# Get results!
+dds_1 <- DESeq(dds)
+# Extract the condition effect by name
+cond_name <- grep("^condition_", resultsNames(dds_1), value = TRUE)
+dds_results <- results(dds_1, name = cond_name, alpha = 0.1)
+
+# Merge with coordinate info
+coord_info <- dplyr::select(counts, Geneid, Chr, Start, End)
+dds_results <- data.frame(dds_results)
+dds_results <- tibble::rownames_to_column(dds_results, var = "Geneid")
+dds_results <- merge(dds_results, coord_info, by = "Geneid")
+write.table(dds_results, 'deseq_results_with_brain3.tsv', sep = '\t', quote = FALSE, row.names = FALSE)
+
+# Without brain 3 - use as final results
+
+counts_only_no_brain_3 <- counts_only[, colnames(counts_only) != "S2"]
+metadata_no_brain_3 <- data.frame(sample = colnames(counts_only_no_brain_3),
+                       condition = c("Saline",
+                                     "GDCA",
+                                     "GDCA",
+                                     "Saline",
+                                     "GDCA",
+                                     "Saline",
+                                     "GDCA"))
+metadata_no_brain_3 <- tibble::column_to_rownames(metadata_no_brain_3,
+                                                  var = "sample")
+metadata_no_brain_3$condition <- factor(metadata_no_brain_3$condition,
+                                        levels = c("Saline", "GDCA"))
+stopifnot(all(colnames(counts_only_no_brain_3) == rownames(metadata_no_brain_3)))
+dds_no_brain_3 <- DESeqDataSetFromMatrix(countData = counts_only_no_brain_3,
+                      colData=metadata_no_brain_3, design=~condition)
+keep <- rowSums(counts(dds_no_brain_3) >= 10) >= 3 # 3 is smallest group size
+dds_no_brain_3 <- dds_no_brain_3[keep,]
+# Get results!
+dds_no_brain_3 <- DESeq(dds_no_brain_3)
+# Extract the condition effect by name
+cond_name <- grep("^condition_", resultsNames(dds_no_brain_3), value = TRUE)
+dds_results_no_brain_3 <- results(dds_no_brain_3, name = cond_name, alpha = 0.1)
+
+# Merge with coordinate info
+dds_results_no_brain_3 <- data.frame(dds_results_no_brain_3)
+dds_results_no_brain_3 <- tibble::rownames_to_column(dds_results_no_brain_3, var = "Geneid")
+dds_results_no_brain_3 <- merge(dds_results_no_brain_3, coord_info, by = "Geneid")
+write.table(dds_results_no_brain_3, 'deseq_results.tsv', sep = '\t', quote = FALSE, row.names = FALSE)
+
+# Generally not using lfcshrink because these are not RNA data
+```
+
+Get some high level stats on both sets of DESeq results.
+
+```{r}
+# Brain 3 included
+sig_results <- dplyr::filter(data.frame(dds_results), padj <= 0.1)
+sum(sig_results$log2FoldChange > 0)
+sum(sig_results$log2FoldChange < 0)
+min(abs(sig_results$log2FoldChange))
+
+# No brain 3 (final)
+sig_results_no_brain_3 <- dplyr::filter(data.frame(dds_results_no_brain_3), padj <= 0.1)
+sum(sig_results_no_brain_3$log2FoldChange > 0)
+sum(sig_results_no_brain_3$log2FoldChange < 0)
+min(abs(sig_results_no_brain_3$log2FoldChange))
+
+# Overlap
+sig_results_minimal <- dplyr::select(sig_results, Geneid, log2FoldChange)
+sig_results_minimal <- dplyr::rename(sig_results_minimal, LFC_with_brain3 = log2FoldChange)
+sig_results_no_brain_3_minimal <- dplyr::select(sig_results_no_brain_3, Geneid, log2FoldChange)
+sig_results_no_brain_3_minimal <- dplyr::rename(sig_results_no_brain_3_minimal, LFC_no_brain3 = log2FoldChange)
+overlap <- merge(sig_results_minimal, sig_results_no_brain_3_minimal, by = "Geneid")
+overlap$same_direction <- sign(overlap$LFC_with_brain3) == sign(overlap$LFC_no_brain3)
+
+# Same direction is always true
+# 190 rows in overlap
+# 190 / 207 = 0.918
+```
+
+Volcano plot - results without brain 3.
+
+```{r}
+# Filter to the non-NA results
+dds_results_no_brain_3 <- dplyr::filter(dds_results_no_brain_3, !is.na(padj))
+
+# Add a -log10p column
+dds_results_no_brain_3$neglog10p <- -log10(dds_results_no_brain_3$padj)
+
+# Add a column for significance categorization
+dds_results_no_brain_3$significance <- ifelse(dds_results_no_brain_3$padj <= 0.1 & dds_results_no_brain_3$log2FoldChange > 0, "More accessible", ifelse(dds_results_no_brain_3$padj <= 0.1 & dds_results_no_brain_3$log2FoldChange < 0, "Less accessible", "Not significant"))
+
+ggplot(dds_results_no_brain_3, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
+geom_point(alpha = 0.6, size = 1.5) +
+scale_color_manual(values = c("More accessible" = "#9f329f", "Less accessible" = "#008888", "Not significant" = "gray")) +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+theme_bw() +
+labs(title = "Volcano plot for GDCA ATAC-Seq", x = "Log2 Fold Change vs. Control", y = "-Log10 Adjusted p-value", color = "Significance") +
+theme(legend.position = "none",
+      axis.text = element_text(size = 8, color = 'black'),
+      axis.title = element_text(size = 10, color = 'black'),
+      plot.title = element_text(size = 10, color = 'black')) 
+
+ggsave('volcano_plot.pdf', width = 3.75, height = 2.75)
+```
+
+Output files that are needed for the coverage heatmaps (section 3.9 from this article: https://link.springer.com/protocol/10.1007/978-1-0716-1103-6_10)
+
+```{r}
+# Filter the significant results (without brain 3) to "up" and "down" peaks, and select only important columns
+sig_results_no_brain_3_up <- dplyr::filter(sig_results_no_brain_3, log2FoldChange > 0) %>% dplyr::select(., Chr, Start, End, baseMean, log2FoldChange)
+sig_results_no_brain_3_down <- dplyr::filter(sig_results_no_brain_3, log2FoldChange < 0) %>% dplyr::select(., Chr, Start, End, baseMean, log2FoldChange)
+
+# Convert to bed format
+sig_results_no_brain_3_up$Start <- sig_results_no_brain_3_up$Start-1
+sig_results_no_brain_3_down$Start <- sig_results_no_brain_3_down$Start-1
+
+# Write out the tables
+write.table(sig_results_no_brain_3_up, 'up_peaks_input_for_cov_heatmaps.bed', sep = '\t', quote = FALSE, row.names = FALSE)
+
+write.table(sig_results_no_brain_3_down, 'down_peaks_input_for_cov_heatmaps.bed', sep = '\t', quote = FALSE, row.names = FALSE)
+```
+
+For HOMER peak annotation of differential peaks.
+
+```{r}
+# Modify sig results to just the needed columns
+sig_results_no_brain_3 <- dplyr::select(sig_results_no_brain_3, Geneid, Chr, Start, End)
+# add "strand" information
+sig_results_no_brain_3$Strand <- "."
+# write file
+write.table(sig_results_no_brain_3, "sig_peak_file_for_homer.txt", sep='\t', quote = FALSE, row.names = FALSE, col.names = FALSE)
+```

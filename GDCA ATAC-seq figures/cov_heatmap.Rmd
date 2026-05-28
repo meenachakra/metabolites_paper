@@ -1,0 +1,131 @@
+---
+title: "cov_heatmap"
+output: html_document
+date: "2025-09-21"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(viridis)
+library(fields)
+```
+
+Read in matrices. Define a function.
+
+```{r}
+read_matrix <- function(fpath, condition) {
+  mat <- read.table(fpath, sep = '\t', header = TRUE)
+  mat <- tibble::column_to_rownames(mat, var = 'pos')
+  mat <- as.matrix(mat)
+  storage.mode(mat) <- "numeric"
+  # last column is all 0
+  mat <- mat[, -ncol(mat), drop = FALSE]
+  colnames(mat) <- gsub("^X\\.", paste0(condition, "Minus"), colnames(mat))
+  colnames(mat) <- gsub("^X", paste0(condition, "Plus"), colnames(mat))
+  return(mat)
+}
+
+up_peaks_cov_in_saline <- read_matrix('up_peaks_cov_in_saline_samples.matrix', 'Saline')
+
+up_peaks_cov_in_gdca <- read_matrix('up_peaks_cov_in_gdca_samples.matrix', 'GDCA')
+
+down_peaks_cov_in_saline <- read_matrix('down_peaks_cov_in_saline_samples.matrix', 'Saline')
+
+down_peaks_cov_in_gdca <- read_matrix('down_peaks_cov_in_gdca_samples.matrix', 'GDCA')
+```
+
+Combine up peaks and combine down peaks.
+
+```{r}
+# Merge the up peaks 
+up_peaks_cov_in_saline <- tibble::rownames_to_column(data.frame(up_peaks_cov_in_saline), var = 'pos')
+up_peaks_cov_in_gdca <- tibble::rownames_to_column(data.frame(up_peaks_cov_in_gdca), var = 'pos')
+up_peaks_merged <- merge(up_peaks_cov_in_saline, up_peaks_cov_in_gdca, by = 'pos')
+up_peaks_merged <- tibble::column_to_rownames(up_peaks_merged, var = 'pos')
+
+# Merge the down peaks
+down_peaks_cov_in_saline <- tibble::rownames_to_column(data.frame(down_peaks_cov_in_saline), var = 'pos')
+down_peaks_cov_in_gdca <- tibble::rownames_to_column(data.frame(down_peaks_cov_in_gdca), var = 'pos')
+down_peaks_merged <- merge(down_peaks_cov_in_saline, down_peaks_cov_in_gdca, by = 'pos')
+down_peaks_merged <- tibble::column_to_rownames(down_peaks_merged, var = 'pos')
+```
+
+Plot up peaks.
+
+```{r}
+# Open a PDF device — set width/height in inches
+pdf("up_peaks_coverage_heatmap.pdf", width = 8, height = 2)
+
+# Set reasonable margins
+par(mar = c(4, 2, 2, 2))
+
+# Plot heatmap + legend
+image.plot(
+  t(as.matrix(up_peaks_merged)),
+  col = viridis(100),
+  axes = FALSE,
+  useRaster = TRUE,
+  legend.lab = "CPM",
+  legend.width = 0.6,   # thinner legend
+  legend.cex = 0.8     # smaller font size
+)
+
+# Add white vertical line after column 4001
+abline(v = 4001 / ncol(up_peaks_merged), col = "white", lwd = 2)
+
+dev.off()
+```
+
+Plot down peaks.
+
+```{r}
+# Open a PDF device — set width/height in inches
+pdf("down_peaks_coverage_heatmap.pdf", width = 4, height = 3.25)
+
+# Set reasonable margins
+par(mar = c(4, 2, 2, 2))
+
+# Plot heatmap + legend
+image.plot(
+  t(as.matrix(down_peaks_merged)),
+  col = viridis(100),
+  axes = FALSE,
+  useRaster = TRUE,
+  legend.lab = "CPM",
+  legend.width = 0.6,   # thinner legend
+  legend.cex = 0.8     # smaller font size
+)
+
+# Add white vertical line after column 4001
+abline(v = 4001 / ncol(down_peaks_merged), col = "white", lwd = 2)
+
+dev.off()
+```
+
+Bigger version.
+
+```{r}
+# Open a PDF device — set width/height in inches
+pdf("down_peaks_coverage_heatmap_big.pdf", width = 8, height = 4)
+
+# Set reasonable margins
+par(mar = c(4, 2, 2, 2))
+
+# Plot heatmap + legend
+image.plot(
+  t(as.matrix(down_peaks_merged)),
+  col = viridis(100),
+  axes = FALSE,
+  useRaster = TRUE,
+  legend.lab = "CPM",
+  legend.width = 0.6,   # thinner legend
+  legend.cex = 0.8     # smaller font size
+)
+
+# Add white vertical line after column 4001
+abline(v = 4001 / ncol(down_peaks_merged), col = "white", lwd = 2)
+
+dev.off()
+```

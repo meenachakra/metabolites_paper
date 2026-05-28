@@ -1,0 +1,162 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-09-22"
+---
+
+Load libraries.
+
+```{r}
+library(chromVAR)
+library(motifmatchr)
+library(JASPAR2024)
+library(BSgenome.Mmusculus.UCSC.mm10)
+library(TFBSTools)
+library(dplyr)
+library(SummarizedExperiment)
+library(ggplot2)
+library(pheatmap)
+```
+
+Following guidance from: https://link.springer.com/protocol/10.1007/978-1-0716-1103-6_10
+Get TF motif database.
+
+```{r}
+set.seed(123)
+opts <- list()
+opts["species"] <- "Mus musculus"
+opts["collection"] <- "CORE"
+
+sqlite_file <- JASPAR2024()
+
+motifs <- TFBSTools::getMatrixSet(sqlite_file@db, opts)
+
+# attach human readable names to motif IDs
+if (!isTRUE(all.equal(TFBSTools::name(motifs), names(motifs)))) {
+  names(motifs) <- paste(names(motifs), TFBSTools::name(motifs), sep = "_")
+}
+```
+
+Prepare ATAC-seq data.
+
+```{r}
+genome <- BSgenome.Mmusculus.UCSC.mm10
+# read in counts data frame
+counts <- read.table('All_Samples.counts', sep = '\t', header = TRUE)
+# Define peaks
+rowRanges <- makeGRangesFromDataFrame(counts[,c(2,3,4)],
+                                      seqnames.field = "Chr",
+                                      start.field = "Start",
+                                      end.field = "End")
+# Separate numeric data
+counts_only <- as.matrix(dplyr::select(counts, Brain_1_pooled.sorted.bam, Brain_2_pooled.sorted.bam, Brain_4_pooled.sorted.bam, Brain_5_pooled.sorted.bam, Brain_6_pooled.sorted.bam, Brain_7_pooled.sorted.bam, Brain_8_pooled.sorted.bam))
+# Make an "experiment" containing the data
+colData <- DataFrame(Condition=c("Control", "GDCA", "GDCA", "Control", "GDCA", "Control", "GDCA"), row.names=colnames(counts_only))
+# Sanity check
+stopifnot(all(rownames(colData) == colnames(counts_only)))
+rse <- SummarizedExperiment::SummarizedExperiment(assays=SimpleList(counts=counts_only), rowRanges=rowRanges, colData=colData)
+```
+
+Enable chromVAR to correct for GC bias.
+
+```{r}
+rse_gc <- addGCBias(rse, genome = genome)
+```
+
+Match motifs to peaks.
+
+```{r}
+motif_ix <- matchMotifs(motifs, rse_gc, genome = genome)
+
+# check structure
+motif_matrix <- motifMatches(motif_ix)
+motif_matrix[1:5, 1:5]  # first 5 peaks × first 5 motifs
+```
+
+Compute deviations and variability of deviations across samples.
+
+```{r}
+dev_TF <- computeDeviations(object = rse_gc, annotations = motif_ix)
+variability_TF <- computeVariability(dev_TF)
+
+# Output the resulting DF
+variability_TF_output <- tibble::rownames_to_column(variability_TF,
+                                                    var = 'motif')
+variability_TF_output <- dplyr::rename(variability_TF_output, TF_name=name)
+write.table(variability_TF_output, 'chromvar_results/TF_variability.txt', sep = '\t', quote = FALSE, row.names = FALSE)
+```
+
+Look at sample correlations.
+
+```{r}
+sample_cor_TF <- getSampleCorrelation(dev_TF)
+colnames(sample_cor_TF) <- c("Control_1", "GDCA_1", "GDCA_2", "Control_2", "GDCA_3", "Control_3", "GDCA_4")
+rownames(sample_cor_TF) <- colnames(sample_cor_TF)
+pheatmap(sample_cor_TF, clustering_distance_rows =
+     as.dist(1-sample_cor_TF),  clustering_distance_cols =
+  as.dist(1-sample_cor_TF), filename = "chromvar_results/heatmap_sample_correlations.pdf",
+         height=3,width=7)
+```
+
+Make a graph showing the 10 most variable TFs.
+
+```{r}
+# Read in again if necessary
+variability_TF_output <- read.csv('chromvar_results/TF_variability.txt', sep = '\t')
+# Order by variability
+variability_TF_output <- variability_TF_output[order(variability_TF_output$variability, decreasing = TRUE),]
+# Take top 10
+variability_TF_top10 <- variability_TF_output[seq(1,10),]
+
+# make motif a factor
+variability_TF_top10$motif <- factor(variability_TF_top10$motif, levels = rev(variability_TF_top10$motif))
+
+# cap padj
+variability_TF_top10$p_value_adj <- pmax(variability_TF_top10$p_value_adj, 1E-200)
+
+ggplot(variability_TF_top10, aes(x = motif, y = variability)) +
+  geom_pointrange(aes(ymin = bootstrap_lower_bound, 
+                      ymax = bootstrap_upper_bound, 
+                      color = -log10(p_value_adj))) +
+  coord_flip() +
+  scale_color_gradient(low = "#99cfcf", high = "#006c6c") +
+  labs(title = "Highly Variable TF Motifs",
+       y = "Variability (with bootstrap CI)",
+       x = "TF motif",
+       color = "-log10(padj)\ncapped at 200") +
+  theme_bw() +
+  theme(legend.position = "right",
+      axis.text = element_text(size = 8, color = 'black'),
+      axis.title = element_text(size = 10, color = 'black'),
+      plot.title = element_text(size = 10, color = 'black'),
+      legend.text = element_text(size = 8, color = 'black'),
+      legend.title = element_text(size = 8, color = 'black'))
+
+ggsave('chromvar_results/highly_variable_tf_motifs.pdf', width = 4, height = 3)
+```
+
+Examine directionality of changes of variable TFs with heatmap - maybe take the top 25.
+
+```{r}
+# Extract per-sample deviations for all TFs
+Dev_Highest_var_TF <- as.data.frame(assays(dev_TF)[[1]])
+# Merge with variability_TF
+Dev_Highest_var_TF <- tibble::rownames_to_column(Dev_Highest_var_TF, var = 'Motif')
+variability_TF <- tibble::rownames_to_column(variability_TF, var = 'Motif')
+# Merge
+merged <- merge(Dev_Highest_var_TF, variability_TF, by = 'Motif')
+# Subset to top 25 variable TFs
+merged <- merged[order(merged$variability, decreasing = TRUE),]
+merged <- merged[seq(1,25),]
+# Extract numeric portion
+rownames(merged) <- NULL
+merged <- tibble::column_to_rownames(merged, var = 'Motif')
+merged <- as.matrix(dplyr::select(merged, Brain_1_pooled.sorted.bam, Brain_2_pooled.sorted.bam, Brain_4_pooled.sorted.bam, Brain_5_pooled.sorted.bam, Brain_6_pooled.sorted.bam, Brain_7_pooled.sorted.bam, Brain_8_pooled.sorted.bam))
+# Rename columns
+colnames(merged) <- c("Control_1", "GDCA_1", "GDCA_2", "Control_2", "GDCA_3", "Control_3", "GDCA_4")
+# Reorder columns
+merged <- as.matrix(dplyr::select(data.frame(merged), "Control_1", "Control_2", "Control_3", "GDCA_1", "GDCA_2", "GDCA_3", "GDCA_4"))
+pheatmap(merged, cluster_rows = F,
+     cluster_cols = F, scale = "row", filename =
+     "chromvar_results/Top25_TF_Heatmap.pdf",height=7,width=7)
+```

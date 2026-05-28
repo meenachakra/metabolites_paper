@@ -1,0 +1,9 @@
+Sample	Group
+filtered_Brain_1_pooled.MACS2	A
+filtered_Brain_2_pooled.MACS2	A
+filtered_Brain_3_pooled.MACS2	A
+filtered_Brain_4_pooled.MACS2	A
+filtered_Brain_5_pooled.MACS2	A
+filtered_Brain_6_pooled.MACS2	A
+filtered_Brain_7_pooled.MACS2	A
+filtered_Brain_8_pooled.MACS2	A

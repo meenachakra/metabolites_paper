@@ -1,0 +1,281 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-09-21"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(ggrepel)
+library(see)
+library(rGREAT)
+library(GenomicRanges)
+library(rtracklayer)
+library(GenomeInfoDb)
+library(TxDb.Mmusculus.UCSC.mm10.knownGene)
+library(tidyr)
+```
+
+First, examine the annotation stats.
+
+```{r}
+ann_stats <- read.csv('annotation_stats.txt', sep = '\t')
+
+# I really care about the basic annotation stats
+ann_stats <- ann_stats[seq(1,12),]
+# Sanity check
+stopifnot(sum(as.numeric(ann_stats$Number.of.peaks)) == 207)
+```
+
+First, make a pie chart showing the % of differential peaks in each category.
+
+```{r}
+# Filter to rows with number of peaks > 0
+ann_stats$Number.of.peaks <- as.numeric(ann_stats$Number.of.peaks)
+ann_stats_present_peaks <- dplyr::filter(ann_stats, Number.of.peaks > 0)
+
+# Compute percentages and label position
+ann_stats_present_peaks <- ann_stats_present_peaks %>%
+  mutate(
+    Percentage = round(100 * Number.of.peaks / sum(Number.of.peaks), 1),
+    Fraction = Number.of.peaks / sum(Number.of.peaks),
+    Label = paste0(Annotation, " (", Percentage, "%)"),
+    ypos = cumsum(Fraction) - 0.5 * Fraction  # midpoint of each slice
+  )
+
+# Color blind friendly palette
+cb_palette <- see::okabeito_colors()[seq(1,6)]
+names(cb_palette) <- c("Intergenic", "Promoter", "Intron", "3UTR", "TTS", "Exon")
+
+# Plot with labels outside and connecting lines
+ggplot(ann_stats_present_peaks, aes(x = 1, y = Fraction, fill = Annotation)) +
+  geom_col(width = 1, color = "white") +
+  coord_polar("y") +
+  theme_void() +
+  labs(title = "Differential Peaks: Overlapping Genomic Features") +
+  scale_fill_manual(values = cb_palette) +
+  theme(legend.position = "none") +
+  geom_text_repel(
+    aes(y = ypos, label = Label),
+    nudge_x = 1.8,
+    segment.size = 0.5,
+    show.legend = FALSE,
+    size = 4,
+    direction = "y",
+    hjust = 0
+  ) +
+  xlim(0.5, 2.8)  # space for labels outside
+
+ggsave('pc_peaks_per_major_feature.pdf', width = 7, height = 4)
+```
+
+Next make a bar chart showing the log2 ratio (obs/expected) peaks.
+Annotate with significance stars.
+
+```{r}
+ann_stats_present_peaks <- dplyr::select(ann_stats_present_peaks,
+                                         Number.of.peaks,
+                                         Annotation,
+                                         Log2.Ratio..obs.exp.,
+                                         LogP.enrichment...values.depleted.)
+
+# Rename columns above
+ann_stats_present_peaks <- dplyr::rename(ann_stats_present_peaks,
+                                         Obs_Exp_Ratio=Log2.Ratio..obs.exp.,
+                                         Signed_logP=LogP.enrichment...values.depleted.)
+
+# Make relevant columns numeric
+ann_stats_present_peaks$Obs_Exp_Ratio <- as.numeric(ann_stats_present_peaks$Obs_Exp_Ratio)
+
+ann_stats_present_peaks$Signed_logP <- as.numeric(ann_stats_present_peaks$Signed_logP)
+
+# Add significance, significance stars, and directionality
+# I know the log for the p-value was a natural log based on trying the binomial test myself for a couple rows
+ann_stats_present_peaks <- ann_stats_present_peaks %>%
+  dplyr::mutate(
+    pval = exp(-abs(Signed_logP)), # log of p-value between 0 and 1 will always be negative so have to make sure you're including that negative in the exponentiation
+    direction = ifelse(Signed_logP < 0, "Obs > Exp", "Obs < Exp"), # because + values are depleted according to the original column header
+    stars = case_when(
+      pval < 0.001 ~ "***",
+      pval < 0.01  ~ "**",
+      pval < 0.05  ~ "*",
+      TRUE ~ ""
+    )
+  )
+
+# Reorder
+ann_stats_present_peaks <- ann_stats_present_peaks[order(ann_stats_present_peaks$Obs_Exp_Ratio),]
+
+# Make relevant columns into factors
+ann_stats_present_peaks$Annotation <- factor(ann_stats_present_peaks$Annotation, levels = ann_stats_present_peaks$Annotation)
+ann_stats_present_peaks$direction <- factor(ann_stats_present_peaks$direction, levels = c("Obs < Exp", "Obs > Exp"))
+
+# Assign positions to the significance stars
+ann_stats_present_peaks <- dplyr::mutate(ann_stats_present_peaks,
+                                         star_y = ifelse(Obs_Exp_Ratio > 0,
+                                                         Obs_Exp_Ratio + 0.05,
+                                                         Obs_Exp_Ratio - 0.05), star_vjust = ifelse(Obs_Exp_Ratio > 0, 0, 1))
+
+# Now plot
+ggplot(ann_stats_present_peaks, aes(x = Annotation,
+               y = Obs_Exp_Ratio,
+               fill = direction)) + geom_col(width = 0.7) + 
+  geom_hline(yintercept = 0, linewidth = 0.6, colour = "black") +
+  geom_text(aes(y = star_y, label = stars, vjust = star_vjust),
+            size = 5, fontface = "bold") +
+  scale_fill_manual(values = c(`Obs < Exp` = "#008888",
+                               `Obs > Exp` = "#9f329f")) +
+  labs(x = NULL, y = "Log2(Observed / Expected)", fill = "Direction",
+       title = "Differential Peaks: Overlapping Genomic Features") +
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1, color = 'black', size = 10),
+        axis.text.y = element_text(size = 8, color = 'black'),
+        axis.title = element_text(size = 10, color = 'black'),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 10, color = 'black'),
+          legend.position = c(0.02, 0.98),
+  legend.justification = c("left", "top"),
+  plot.title = element_text(size = 10, color = 'black')) + ylim(-1,1.75)
+
+ggsave('obs_vs_expected_per_major_feature.pdf', width = 3.75, height = 3)
+```
+Determine the genes whose regulatory regions overlap with each peak, using rGREAT.
+
+How many cases do we see where:
+- a region is differentially accessible between GDCA and saline brains by ATAC
+- a gene associated with that region is differentially expressed by RNA-seq
+- directionality of change is the same
+
+Relevant pages describing rGREAT:
+https://jokergoo.github.io/rGREAT/articles/local-GREAT.html
+https://jokergoo.github.io/rGREAT/articles/other-organisms.html
+
+```{r}
+# Read in the differential accessibility results
+atac_deseq_results <- read.csv('deseq_results.tsv', sep = '\t')
+
+# Define differentially accessible peaks
+diff_access <- dplyr::filter(atac_deseq_results, padj <= 0.10)
+diff_access <- dplyr::select(diff_access, Geneid, Chr, Start, End)
+
+# Define a set of background peaks
+bg <- dplyr::select(atac_deseq_results, Geneid, Chr, Start, End)
+
+# Genomic range coordinates (the necessary input to rGREAT) are 1-based inclusive so we're good on coordinates
+# Sources below
+# https://www.bioconductor.org/help/course-materials/2014/SeattleFeb2014/Ranges.pdf -- 1-based, closed (inclusive)
+# https://bioconductor.org/packages//2.11/bioc/vignettes/rtracklayer/inst/doc/rtracklayer.pdf -- 1-based
+
+# Convert to GRanges
+# https://www.bioconductor.org/packages/devel/bioc/vignettes/GenomicRanges/inst/doc/GenomicRangesIntroduction.html
+bg_gr <- GRanges(
+    seqnames = bg$Chr,
+    ranges = IRanges(
+        start = bg$Start,
+        end = bg$End,
+        names = bg$Geneid
+    )
+)
+
+diff_access_gr <- GRanges(
+    seqnames = diff_access$Chr,
+    ranges = IRanges(
+        start = diff_access$Start,
+        end = diff_access$End,
+        names = diff_access$Geneid
+    )
+)
+
+genome(bg_gr) <- "mm10"
+genome(diff_access_gr) <- "mm10"
+
+# Run GREAT
+res_bp <- great(
+    diff_access_gr,
+    gene_sets = "GO:BP",
+    tss_source = "TxDb.Mmusculus.UCSC.mm10.knownGene",
+    background = bg_gr
+)
+
+enrich_tab <- getEnrichmentTable(res_bp)
+peak_gene <- getRegionGeneAssociations(res_bp)
+
+# Get the genes per peak
+genes_per_peak_long <- data.frame(
+  peak_name = rep(names(peak_gene), lengths(peak_gene$annotated_genes)),
+  seqnames = rep(as.character(seqnames(peak_gene)), lengths(peak_gene$annotated_genes)),
+  start = rep(start(peak_gene), lengths(peak_gene$annotated_genes)),
+  end = rep(end(peak_gene), lengths(peak_gene$annotated_genes)),
+  gene_raw = unlist(as.list(peak_gene$annotated_genes), use.names = FALSE),
+  dist_to_TSS = unlist(as.list(peak_gene$dist_to_TSS), use.names = FALSE)
+)
+
+# Add LFC and padj from DESeq2 (ATAC)
+atac_deseq_results_minimal <- dplyr::select(atac_deseq_results,
+                                            Geneid, log2FoldChange, padj)
+genes_per_peak_long <- merge(genes_per_peak_long,
+                             atac_deseq_results_minimal, by.x = "peak_name",
+                             by.y = "Geneid")
+genes_per_peak_long <- dplyr::rename(genes_per_peak_long,
+                                     log2FoldChange_ATAC=log2FoldChange,
+                                     padj_ATAC=padj)
+# also add an absolute distance to TSS
+genes_per_peak_long$abs_dist_to_TSS <- abs(genes_per_peak_long$dist_to_TSS)
+
+# Add LFC and padj from DESeq2 (RNA)
+rna_deseq_results <- read.csv('../Mouse brain RNAseq/deseq2_outputs/gdca_all_results.txt', sep = '\t')
+rna_deseq_results_minimal <- dplyr::select(rna_deseq_results,
+                                           Gene_Name, log2FoldChange, padj)
+rna_deseq_results_minimal <- dplyr::rename(rna_deseq_results_minimal,
+                                           log2FoldChange_RNA=log2FoldChange,
+                                     padj_RNA=padj)
+genes_per_peak_long <- genes_per_peak_long %>%
+  left_join(rna_deseq_results_minimal, by = c("gene_raw" = "Gene_Name"))
+
+genes_per_peak_long$both_rna_and_atac_sig <- ifelse(genes_per_peak_long$padj_RNA <= 0.10, "yes", "no")
+
+genes_per_peak_long$directionality_rna_vs_atac <- ifelse(genes_per_peak_long$both_rna_and_atac_sig == "yes", ifelse(sign(genes_per_peak_long$log2FoldChange_ATAC) == sign(genes_per_peak_long$log2FoldChange_RNA), "same", "different"), NA)
+```
+
+Add in some of the information from HOMER, then output.
+
+```{r}
+homer_annotations <- read.csv('annotated_sig_peak_file.txt', sep = '\t')
+colnames(homer_annotations)[1] <- "Peak_id"
+
+homer_annotations <- dplyr::select(homer_annotations,
+                                   Peak_id, Chr, Start, End, Annotation,
+                                   Detailed.Annotation)
+homer_annotations <- dplyr::rename(homer_annotations,
+                                   HOMER_annotation = Annotation,
+                                   HOMER_detailed_annotation = Detailed.Annotation)
+
+genes_per_peak_long <- dplyr::rename(genes_per_peak_long,
+                                     Peak_id = peak_name,
+                                     Chr = seqnames,
+                                     Start = start,
+                                     End = end,
+                                     Overlaps_reg_region_of_this_gene = gene_raw)
+
+merged <- merge(genes_per_peak_long, homer_annotations,
+                by = c("Peak_id", "Chr", "Start", "End"))
+
+# Reorder columns
+merged <- dplyr::select(merged, Peak_id, Chr, Start, End, log2FoldChange_ATAC,
+                        padj_ATAC, HOMER_annotation,
+                        HOMER_detailed_annotation, Overlaps_reg_region_of_this_gene,
+                        dist_to_TSS, abs_dist_to_TSS,
+                        log2FoldChange_RNA, padj_RNA, both_rna_and_atac_sig,
+                        directionality_rna_vs_atac)
+
+merged <- dplyr::rename(merged,
+                        Overlaps_reg_region_of_this_gene_GREAT=Overlaps_reg_region_of_this_gene,
+                        dist_to_TSS_GREAT=dist_to_TSS,
+                        abs_dist_to_TSS_GREAT=abs_dist_to_TSS)
+
+write.table(merged, 'annotated_sig_peaks_file_with_homer_and_great_info.txt', sep = '\t', quote = FALSE, row.names = FALSE)
+```
