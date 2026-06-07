@@ -1,0 +1,86 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-20"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(ggpubr)
+library(reshape2)
+library(viridis)
+```
+
+Read in pre-computed significant marker genes. 
+
+```{r}
+markers_sig <- readRDS("significant_markers_per_class_ximerakis.rds")
+```
+
+Read in differential expression results, and merge.
+
+```{r}
+deseq_res <- read.csv('deseq2_outputs/gdca_sig.txt', sep = '\t')
+# Filter to downregulated genes
+deseq_res <- dplyr::filter(deseq_res, log2FoldChange < 0)
+deseq_res$direction <- 'Downregulated'
+# Retain only the important columns
+deseq_res <- dplyr::select(deseq_res, Gene_Name, direction)
+# Merge with markers sig
+markers_sig <- merge(markers_sig, deseq_res, by.x = 'gene', by.y = 'Gene_Name', all.x = TRUE)
+```
+
+How many downregulated markers are there per cell class? Make a plot.
+
+```{r}
+# Select important columns
+plot_df <- dplyr::select(markers_sig,
+                             gene,
+                             cluster,
+                             direction)
+plot_df$downregulated <- ifelse(!is.na(plot_df$direction), TRUE, FALSE)
+plot_df <- plot_df %>%
+  group_by(cluster) %>%
+  summarise(
+    n_genes = n(),
+    n_down  = sum(downregulated),
+    pct_down = 100 * n_down / n_genes
+  ) %>%
+  arrange(desc(pct_down))
+
+# Assign shorter name
+plot_df <- plot_df %>%
+  mutate(
+    short_name = case_when(
+      cluster == "Neuronal_lineage" ~ "Neuron",
+      cluster == "Astrocyte_lineage" ~ "Astro",
+      cluster == "Ependymal_cells" ~ "Epend",
+      cluster == "Vasculature_cells" ~ "Vasc",
+      cluster == "Oligodendrocyte_lineage" ~ "Olg",
+      cluster == "Immune_cells" ~ "Immune"
+    )
+  )
+
+plot_df$short_name <- factor(plot_df$short_name,
+                          levels = plot_df$short_name)
+
+# Lollipop plot
+ggplot(plot_df, aes(x = short_name, y = pct_down)) +
+  geom_segment(aes(x = short_name, xend = short_name, y = 0, yend = pct_down),
+               color = "#5b45a2", linewidth = 1) +
+  geom_point(shape = 21, fill = NA, color = "#5b45a2", size = 3.8, stroke = 1.2) +
+  theme_minimal() +
+  labs(y = '% Marker Genes Downregulated') +
+  theme(axis.line = element_line(color = 'black'),
+        axis.title.y = element_text(color = 'black', size = 10),
+        axis.title.x = element_blank(),
+        axis.text.y = element_text(color = 'black', size = 8),
+        axis.text.x = element_text(color = 'black', size = 10),
+        panel.grid = element_blank())
+
+ggsave('pc_marker_genes_downregulated_by_gdca_per_class.pdf', height = 3, width = 3.75)
+```
