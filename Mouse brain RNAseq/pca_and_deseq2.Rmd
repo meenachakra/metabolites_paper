@@ -448,83 +448,62 @@ output_degs(deseq2_output_gdca[[1]],
 Volcano plots! Make more efficient with a function.
 
 ```{r}
-volcano <- function(deseq_results, fname, metab_name, ymax, thresh = 0.10,
-  wid = 4, ht = 4, label_genes = NULL) {
-
+volcano <- function(deseq_results, fname, metab_name, ymax, thresh=0.10, wid=4, ht=4, label_genes=NULL, p_cap=NULL) {
   # Read in the file
-  deseq_results <- read.csv(deseq_results, sep = "\t")
-
+  deseq_results <- read.csv(deseq_results, sep='\t')
+  
   # Filter to the non-NA results
   deseq_results <- dplyr::filter(deseq_results, !is.na(padj))
-
+  
   # Add a -log10p column
   deseq_results$neglog10p <- -log10(deseq_results$padj)
-
+  
+  # Optional capping of -log10p
+  if (!is.null(p_cap)) {
+    cap_val <- -log10(p_cap)            # convert p-value cap to –log10 space
+    deseq_results$neglog10p <- pmin(deseq_results$neglog10p, cap_val)
+    y_lab <- paste0("-Log10 adjusted p-value (capped at ", round(cap_val), ")")
+  } else {
+    y_lab <- "-Log10 adjusted p-value"
+  }
+  
   # Add a column for significance categorization
-  deseq_results$significance <- ifelse(
-    deseq_results$padj <= thresh & deseq_results$log2FoldChange >= 0.1,
-    "Upregulated",
-    ifelse(
-      deseq_results$padj <= thresh & deseq_results$log2FoldChange <= -0.1,
-      "Downregulated",
-      "n.s."
-    )
-  )
-
+  deseq_results$significance <- ifelse(deseq_results$padj <= thresh & deseq_results$log2FoldChange >= 0.1, "Upregulated", ifelse(deseq_results$padj <= thresh & deseq_results$log2FoldChange <= -0.1, "Downregulated", "n.s."))
+  
   # Define which genes to label
-  deseq_results$label <- ifelse(
-    deseq_results$Gene_ID %in% label_genes,
-    ifelse(
-      is.na(deseq_results$Gene_Name) | deseq_results$Gene_Name == "",
-      deseq_results$Gene_ID,
-      deseq_results$Gene_Name
-    ),
-    NA
-  )
-
-  # Base plot
-  p <- ggplot(deseq_results, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
-    geom_point(alpha = 0.6, size = 1.5) +
-    scale_color_manual(
-      values = c(
-        "Upregulated" = "#9f329f",
-        "Downregulated" = "#008888",
-        "n.s." = "grey"
-      )
-    ) +
+  deseq_results$label <- ifelse(deseq_results$Gene_ID %in% label_genes, ifelse(is.na(deseq_results$Gene_Name) | deseq_results$Gene_Name == "",
+                                                                                       deseq_results$Gene_ID, deseq_results$Gene_Name),
+                                NA)
+  
+  # Plot
+  ggplot(deseq_results, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
+  geom_point(alpha = 0.6, size = 1.5) +  # Scatter plot points
+  scale_color_manual(values = c("Upregulated" = "#9f329f", "Downregulated" = "#008888", "n.s." = "grey")) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
-    geom_hline(yintercept = -log10(thresh), linetype = "dashed", color = "gray70", linewidth = 0.5) +
-    coord_cartesian(ylim = c(0, ymax)) +
+    geom_hline(yintercept = 1, linetype = "dashed", color = "gray70", linewidth = 0.5) +
+    ylim(0, ymax) +
     theme_bw() +
-    theme(
-      legend.position = "none",
-      axis.text = element_text(size = 12, color = "black"),
-      axis.title = element_text(size = 14, color = "black"),
-      plot.title = element_text(size = 14, hjust = 0.5, color = "black")
-    ) +
-    labs(
-      x = "Log2 Fold Change vs. Control",
-      y = "-Log10 adjusted p-value",
-      title = paste0("Volcano plot for ", metab_name)
-    ) +
-    geom_text_repel(
-      aes(label = label),
-      na.rm = TRUE,
-      size = 3,
-      color = "black",
-      segment.size = 0.4,
-      segment.color = "black",
-      force = 1.5,
-      direction = "both",
-      box.padding = 0.5,
-      point.padding = 0.3,
-      min.segment.length = 0.1,
-      max.overlaps = Inf
-    )
-
-  ggsave(fname, plot = p, width = wid, height = ht)
-
-  return(p)
+    theme(legend.position = "none",
+        axis.text = element_text(size = 12, color = 'black'),
+        axis.title = element_text(size = 14, color = 'black'),
+        plot.title = element_text(size = 14, hjust = 0.5, color = 'black')) +
+  labs(x = "Log2 Fold Change vs. Control",
+       y = y_lab,
+       title = paste0("Volcano plot for ", metab_name)) +
+    geom_text_repel(aes(label = label),
+                    na.rm = TRUE,
+                    size = 3,
+                    color = 'black',
+                    segment.size = 0.4,
+                    segment.color = "black",
+                    force = 1.5,
+                    direction = "both",
+                    box.padding = 0.5,
+                    point.padding = 0.3,
+                    min.segment.length = 0.1,
+                    max.overlaps = Inf)
+  
+  ggsave(fname, width=wid, height=ht)
 }
 ```
 
@@ -556,7 +535,7 @@ wid = 4, ht = 4)
 
 # GDCA
 volcano('deseq2_outputs/gdca_all_results.txt', 'volcano_plot_gdca.pdf',
-        'GDCA (0.4 mg/kg)', 110,
+        'GDCA (0.4 mg/kg)', 30,
         label_genes = c("ENSMUSG00000090698.3",
                         "ENSMUSG00000028195.5",
                         "ENSMUSG00000055148.8",
@@ -570,9 +549,12 @@ volcano('deseq2_outputs/gdca_all_results.txt', 'volcano_plot_gdca.pdf',
                         "ENSMUSG00000020108.5",
                         "ENSMUSG00000026628.14",
                         "ENSMUSG00000054364.6",
+                        "ENSMUSG00000038393.15",
+                        "ENSMUSG00000018143.11",
                         "ENSMUSG00000003032.9",
                         "ENSMUSG00000048489.13",
+                        "ENSMUSG00000032515.9",
                         "ENSMUSG00000023067.15",
                         "ENSMUSG00000020423.7"),
-wid = 4, ht = 4)
+wid = 4, ht = 4, p_cap = 1e-30)
 ```
