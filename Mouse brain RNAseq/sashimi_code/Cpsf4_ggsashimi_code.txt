@@ -1,0 +1,7 @@
+python ggsashimi.py -b input_bams.tsv \
+-c chr5:145113839-145115938 \
+-g ../bam_files_and_genome/gencode.vM37.primary_assembly.sorted.gtf \
+-o ggsashimi_cpsf4_ri -C 3 -O 3 \
+--alpha 0.25 -M 6 \
+--base-size=12 -P palette_saline_grey.txt \
+--height=1 --width=6 --ann-height 2

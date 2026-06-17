@@ -1,0 +1,7 @@
+S1L	../bam_files_and_genome/S1LAligned.sortedByCoord.out.bam	Saline
+S2L	../bam_files_and_genome/S2LAligned.sortedByCoord.out.bam	Saline
+S3L	../bam_files_and_genome/S3LAligned.sortedByCoord.out.bam	Saline
+S4L	../bam_files_and_genome/S4LAligned.sortedByCoord.out.bam	Saline
+T1L	../bam_files_and_genome/T1LAligned.sortedByCoord.out.bam	TMAO
+T2L	../bam_files_and_genome/T2LAligned.sortedByCoord.out.bam	TMAO
+T4L	../bam_files_and_genome/T4LAligned.sortedByCoord.out.bam	TMAO
