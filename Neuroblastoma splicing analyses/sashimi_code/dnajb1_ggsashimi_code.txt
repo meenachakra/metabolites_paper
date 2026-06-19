@@ -1,0 +1,7 @@
+python ggsashimi.py -b bam_list_pladB.tsv \
+-c chr19:14514581-14517246 \
+-g ../bam_files_and_gtf/gencode.v47.primary_assembly.annotation.gtf \
+-o ggsashimi_dnajb1_ri -C 3 -O 3 \
+--alpha 0.25 \
+--base-size=12 -P palette_vehicle_grey.txt \
+--height=1.25 --width=6 --ann-height 3

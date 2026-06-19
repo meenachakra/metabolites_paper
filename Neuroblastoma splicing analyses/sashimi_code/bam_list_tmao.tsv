@@ -1,0 +1,6 @@
+P1V1	../bam_files_and_gtf/P1V1Aligned.sortedByCoord.out.bam	Vehicle
+P1V2	../bam_files_and_gtf/P1V2Aligned.sortedByCoord.out.bam	Vehicle
+P1V3	../bam_files_and_gtf/P1V3Aligned.sortedByCoord.out.bam	Vehicle
+P1T1	../bam_files_and_gtf/P1T1Aligned.sortedByCoord.out.bam	TMAO
+P1T2	../bam_files_and_gtf/P1T2Aligned.sortedByCoord.out.bam	TMAO
+P1T3	../bam_files_and_gtf/P1T3Aligned.sortedByCoord.out.bam	TMAO

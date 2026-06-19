@@ -1,0 +1,6 @@
+P2V1	../bam_files_and_gtf/P2V1Aligned.sortedByCoord.out.bam	Vehicle
+P2V2	../bam_files_and_gtf/P2V2Aligned.sortedByCoord.out.bam	Vehicle
+P2V3	../bam_files_and_gtf/P2V3Aligned.sortedByCoord.out.bam	Vehicle
+P2P1	../bam_files_and_gtf/P2P1Aligned.sortedByCoord.out.bam	PladB
+P2P2	../bam_files_and_gtf/P2P2Aligned.sortedByCoord.out.bam	PladB
+P2P3	../bam_files_and_gtf/P2P3Aligned.sortedByCoord.out.bam	PladB

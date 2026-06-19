@@ -1,0 +1,7 @@
+python ggsashimi.py -b bam_list_tmao.tsv \
+-c chr11:101947830-101957143 \
+-g ../bam_files_and_gtf/gencode.v47.primary_assembly.annotation.gtf \
+-o ggsashimi_cep126_a3ss -C 3 -O 3 \
+--alpha 0.25 --fix-y-scale \
+--base-size=12 -P palette_vehicle_grey.txt \
+--height=1 --width=6 --ann-height 1.5
