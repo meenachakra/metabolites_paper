@@ -23,6 +23,26 @@ ri_jcec <- read.csv('rmats_output/RI.MATS.JCEC.txt', sep = '\t')
 se_jcec <- read.csv('rmats_output/SE.MATS.JCEC.txt', sep = '\t')
 ```
 
+Read in novel splice site data so we can add this information.
+
+```{r}
+a3ss_novel <- read.csv('rmats_output/fromGTF.novelSpliceSite.A3SS.txt', sep = '\t')
+a5ss_novel <- read.csv('rmats_output/fromGTF.novelSpliceSite.A5SS.txt', sep = '\t')
+mxe_novel <- read.csv('rmats_output/fromGTF.novelSpliceSite.MXE.txt', sep = '\t')
+ri_novel <- read.csv('rmats_output/fromGTF.novelSpliceSite.RI.txt', sep = '\t')
+se_novel <- read.csv('rmats_output/fromGTF.novelSpliceSite.SE.txt', sep = '\t')
+```
+
+Add novel SS info.
+
+```{r}
+a3ss_jcec$novel_splice_site <- a3ss_jcec$ID %in% a3ss_novel$ID
+a5ss_jcec$novel_splice_site <- a5ss_jcec$ID %in% a5ss_novel$ID
+mxe_jcec$novel_splice_site <- mxe_jcec$ID %in% mxe_novel$ID
+ri_jcec$novel_splice_site <- ri_jcec$ID %in% ri_novel$ID
+se_jcec$novel_splice_site <- se_jcec$ID %in% se_novel$ID
+```
+
 Define function for processing each of these tables - i.e., identifying which events are significant.
 
 ```{r}
