@@ -1,0 +1,198 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-24"
+---
+Load libraries.
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(writexl)
+library(ggrepel)
+```
+
+Read in JCEC data.
+
+```{r}
+p1_a3ss_jcec <- read.csv('rMATS-turbo-outputs/plate_1_tmao/A3SS.MATS.JCEC.txt', sep = '\t')
+p1_a5ss_jcec <- read.csv('rMATS-turbo-outputs/plate_1_tmao/A5SS.MATS.JCEC.txt', sep = '\t')
+p1_mxe_jcec <- read.csv('rMATS-turbo-outputs/plate_1_tmao/MXE.MATS.JCEC.txt', sep = '\t')
+p1_ri_jcec <- read.csv('rMATS-turbo-outputs/plate_1_tmao/RI.MATS.JCEC.txt', sep = '\t')
+p1_se_jcec <- read.csv('rMATS-turbo-outputs/plate_1_tmao/SE.MATS.JCEC.txt', sep = '\t')
+
+p2_a3ss_jcec <- read.csv('rMATS-turbo-outputs/plate_2_pladB/A3SS.MATS.JCEC.txt', sep = '\t')
+p2_a5ss_jcec <- read.csv('rMATS-turbo-outputs/plate_2_pladB/A5SS.MATS.JCEC.txt', sep = '\t')
+p2_mxe_jcec <- read.csv('rMATS-turbo-outputs/plate_2_pladB/MXE.MATS.JCEC.txt', sep = '\t')
+p2_ri_jcec <- read.csv('rMATS-turbo-outputs/plate_2_pladB/RI.MATS.JCEC.txt', sep = '\t')
+p2_se_jcec <- read.csv('rMATS-turbo-outputs/plate_2_pladB/SE.MATS.JCEC.txt', sep = '\t')
+```
+
+Read in novel splice site data.
+
+```{r}
+p1_a3ss_novel <- read.csv('rMATS-turbo-outputs/plate_1_tmao/fromGTF.novelSpliceSite.A3SS.txt', sep = '\t')
+p1_a5ss_novel <- read.csv('rMATS-turbo-outputs/plate_1_tmao/fromGTF.novelSpliceSite.A5SS.txt', sep = '\t')
+p1_mxe_novel <- read.csv('rMATS-turbo-outputs/plate_1_tmao/fromGTF.novelSpliceSite.MXE.txt', sep = '\t')
+p1_ri_novel <- read.csv('rMATS-turbo-outputs/plate_1_tmao/fromGTF.novelSpliceSite.RI.txt', sep = '\t')
+p1_se_novel <- read.csv('rMATS-turbo-outputs/plate_1_tmao/fromGTF.novelSpliceSite.SE.txt', sep = '\t')
+
+p2_a3ss_novel <- read.csv('rMATS-turbo-outputs/plate_2_pladB/fromGTF.novelSpliceSite.A3SS.txt', sep = '\t')
+p2_a5ss_novel <- read.csv('rMATS-turbo-outputs/plate_2_pladB/fromGTF.novelSpliceSite.A5SS.txt', sep = '\t')
+p2_mxe_novel <- read.csv('rMATS-turbo-outputs/plate_2_pladB/fromGTF.novelSpliceSite.MXE.txt', sep = '\t')
+p2_ri_novel <- read.csv('rMATS-turbo-outputs/plate_2_pladB/fromGTF.novelSpliceSite.RI.txt', sep = '\t')
+p2_se_novel <- read.csv('rMATS-turbo-outputs/plate_2_pladB/fromGTF.novelSpliceSite.SE.txt', sep = '\t')
+```
+
+Add, to the JCEC data frames, information about whether each event involves a novel splice site.
+
+```{r}
+# P1 A3SS
+p1_a3ss_jcec$novel_splice_site <- p1_a3ss_jcec$ID %in% p1_a3ss_novel$ID
+
+# P1 A5SS
+p1_a5ss_jcec$novel_splice_site <- p1_a5ss_jcec$ID %in% p1_a5ss_novel$ID
+
+# P1 MXE
+p1_mxe_jcec$novel_splice_site <- p1_mxe_jcec$ID %in% p1_mxe_novel$ID
+
+# P1 RI
+p1_ri_jcec$novel_splice_site <- p1_ri_jcec$ID %in% p1_ri_novel$ID
+
+# P1 SE
+p1_se_jcec$novel_splice_site <- p1_se_jcec$ID %in% p1_se_novel$ID
+
+# P2 A3SS
+p2_a3ss_jcec$novel_splice_site <- p2_a3ss_jcec$ID %in% p2_a3ss_novel$ID
+
+# P2 A5SS
+p2_a5ss_jcec$novel_splice_site <- p2_a5ss_jcec$ID %in% p2_a5ss_novel$ID
+
+# P2 MXE
+p2_mxe_jcec$novel_splice_site <- p2_mxe_jcec$ID %in% p2_mxe_novel$ID
+
+# P2 RI
+p2_ri_jcec$novel_splice_site <- p2_ri_jcec$ID %in% p2_ri_novel$ID
+
+# P2 SE
+p2_se_jcec$novel_splice_site <- p2_se_jcec$ID %in% p2_se_novel$ID
+```
+
+Define function for processing each of these tables - i.e., identifying which events are significant.
+
+```{r}
+df_processing <- function(df, splice_event_type, treatment_name) {
+  # Calculate average RNAseq read count in each group
+  # Helper function - compute IJC + SJC per sample, then average across samples
+  get_avg_rc <- function(ijc_col, sjc_col) {
+    mapply(function(ijc, sjc) {
+      ijc_vals <- as.numeric(unlist(strsplit(ijc, ",")))
+      sjc_vals <- as.numeric(unlist(strsplit(sjc, ",")))
+      sample_sums <- ijc_vals + sjc_vals
+      mean(sample_sums)
+    }, ijc_col, sjc_col)
+  }
+  
+  # Apply the helper function
+  df$avg_RC_1 <- get_avg_rc(df$IJC_SAMPLE_1, df$SJC_SAMPLE_1)
+  df$avg_RC_2 <- get_avg_rc(df$IJC_SAMPLE_2, df$SJC_SAMPLE_2)
+  
+  # Compute average PSI for each row for each group
+  df$mean_psi_vals_1 <- sapply(df$IncLevel1, function(x) {
+    mean(as.numeric(unlist(strsplit(x, ","))), na.rm=TRUE)
+  })
+  
+  df$mean_psi_vals_2 <- sapply(df$IncLevel2, function(x) {
+    mean(as.numeric(unlist(strsplit(x, ","))), na.rm=TRUE)
+  })
+  
+  # Now identify significant events in a separate DF called filtered_df
+  # At least 5 counts on average per group
+  filtered_df <- dplyr::filter(df, avg_RC_1 >= 5, avg_RC_2 >= 5)
+  
+  # Filter out if mean_psi_vals_1 < 0.05 and mean_psi_vals_2 < 0.05 
+  # Filter out if mean_psi_vals_1 > 0.95 and mean_psi_vals_2 > 0.95
+  filtered_df <- dplyr::filter(filtered_df, !( (mean_psi_vals_1 > 0.95 & mean_psi_vals_2 > 0.95) | (mean_psi_vals_1 < 0.05 & mean_psi_vals_2 < 0.05) ))
+  
+  # Filter out based on FDR threshold
+  filtered_df <- dplyr::filter(filtered_df, FDR <= 0.01)
+  
+  # Filter on IncLevelDifference - should be redundant with our rmats command given we specified cstat 0.1
+  filtered_df <- dplyr::filter(filtered_df, abs(IncLevelDifference) >= 0.10)
+  
+  # Add a "sig" column to our original DF based on filtered_df
+  df$sig <- ifelse(df$ID %in% filtered_df$ID,
+                   ifelse(df$IncLevelDifference > 0,
+                   'Up in Vehicle',
+                   paste0('Up in ', treatment_name)), 'n.s.')
+  
+  # Specify the splicing event type in case we want to combine processed dataframes later
+  df$splicing_event_type <- splice_event_type
+  
+  return(df)
+}
+```
+
+Apply the function.
+
+```{r}
+p1_a5ss_jcec_processed <- df_processing(p1_a5ss_jcec, "A5SS", "TMAO")
+p1_a3ss_jcec_processed <- df_processing(p1_a3ss_jcec, "A3SS", "TMAO")
+p1_mxe_jcec_processed <- df_processing(p1_mxe_jcec, "MXE", "TMAO")
+p1_ri_jcec_processed <- df_processing(p1_ri_jcec, "RI", "TMAO")
+p1_se_jcec_processed <- df_processing(p1_se_jcec, "SE", "TMAO")
+
+p2_a5ss_jcec_processed <- df_processing(p2_a5ss_jcec, "A5SS", "PladB")
+p2_a3ss_jcec_processed <- df_processing(p2_a3ss_jcec, "A3SS", "PladB")
+p2_mxe_jcec_processed <- df_processing(p2_mxe_jcec, "MXE", "PladB")
+p2_ri_jcec_processed <- df_processing(p2_ri_jcec, "RI", "PladB")
+p2_se_jcec_processed <- df_processing(p2_se_jcec, "SE", "PladB")
+
+# Output all results
+write_xlsx(
+  list(
+    TMAO_A5SS = p1_a5ss_jcec_processed,
+    TMAO_A3SS = p1_a3ss_jcec_processed,
+    TMAO_MXE = p1_mxe_jcec_processed,
+    TMAO_RI = p1_ri_jcec_processed,
+    TMAO_SE = p1_se_jcec_processed,
+    PladB_A5SS = p2_a5ss_jcec_processed,
+    PladB_A3SS = p2_a3ss_jcec_processed,
+    PladB_MXE = p2_mxe_jcec_processed,
+    PladB_RI = p2_ri_jcec_processed,
+    PladB_SE = p2_se_jcec_processed
+  ),
+  path = 'diff_splicing_analysis_results.xlsx' # too big to upload to Github
+)
+
+# Output just the significant events
+
+p1_a5ss_jcec_processed_sig <- dplyr::filter(p1_a5ss_jcec_processed, sig != "n.s.")
+p1_a3ss_jcec_processed_sig <- dplyr::filter(p1_a3ss_jcec_processed, sig != "n.s.")
+p1_mxe_jcec_processed_sig <- dplyr::filter(p1_mxe_jcec_processed, sig != "n.s.")
+p1_ri_jcec_processed_sig <- dplyr::filter(p1_ri_jcec_processed, sig != "n.s.")
+p1_se_jcec_processed_sig <- dplyr::filter(p1_se_jcec_processed, sig != "n.s.")
+
+p2_a5ss_jcec_processed_sig <- dplyr::filter(p2_a5ss_jcec_processed, sig != "n.s.")
+p2_a3ss_jcec_processed_sig <- dplyr::filter(p2_a3ss_jcec_processed, sig != "n.s.")
+p2_mxe_jcec_processed_sig <- dplyr::filter(p2_mxe_jcec_processed, sig != "n.s.")
+p2_ri_jcec_processed_sig <- dplyr::filter(p2_ri_jcec_processed, sig != "n.s.")
+p2_se_jcec_processed_sig <- dplyr::filter(p2_se_jcec_processed, sig != "n.s.")
+
+write_xlsx(
+  list(
+    TMAO_A5SS = p1_a5ss_jcec_processed_sig,
+    TMAO_A3SS = p1_a3ss_jcec_processed_sig,
+    TMAO_MXE = p1_mxe_jcec_processed_sig,
+    TMAO_RI = p1_ri_jcec_processed_sig,
+    TMAO_SE = p1_se_jcec_processed_sig,
+    PladB_A5SS = p2_a5ss_jcec_processed_sig,
+    PladB_A3SS = p2_a3ss_jcec_processed_sig,
+    PladB_MXE = p2_mxe_jcec_processed_sig,
+    PladB_RI = p2_ri_jcec_processed_sig,
+    PladB_SE = p2_se_jcec_processed_sig
+  ),
+  path = 'sig_diff_splicing_events.xlsx'
+)
+```
