@@ -1,0 +1,62 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-08-27"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(readxl)
+library(ggpubr)
+```
+
+Read in data.
+
+```{r}
+dryweight <- read_excel("Female cohort - PO/Data to plot - female cohort.xlsx", sheet = "% dry weight")
+dryweight$`Mouse group` <- ifelse(dryweight$`Mouse group` == 'Veh (PO)', 'Veh\n(PO)', 'G_50\n(PO)')
+dryweight$`Mouse group` <- factor(dryweight$`Mouse group`,
+                                levels = c('Veh\n(PO)',
+                                           'G_50\n(PO)'))
+
+dryweight <- dplyr::rename(dryweight, pc_dry_weight=`% dry weight`)
+```
+
+Plot.
+
+```{r}
+ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
+  geom_boxplot(aes(color = `Mouse group`), fill = NA, outlier.shape = NA, linewidth = 1) +
+  geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
+  scale_color_manual(values = c("Veh\n(PO)" = "#008888", "G_50\n(PO)" = "#000080")) +
+  stat_compare_means(
+    method = "t.test",
+    label = "p.format",
+    comparisons = list(c("Veh\n(PO)", "G_50\n(PO)")),
+    hide.ns = FALSE
+  ) +
+  theme_bw() +
+  theme(
+    legend.position = "none",
+    axis.line = element_line(color = "black"),
+    axis.text.y = element_text(size = 10, color = "black"),
+    axis.text.x = element_text(size = 10, color = "black"),
+    axis.title.y = element_text(size = 12, color = "black"),
+    axis.title.x = element_blank()
+  ) +
+  labs(y = "% dry weight of fecal pellets") + ylim(0,90)
+
+ggsave("Female cohort - PO/dry_weight.pdf", width = 3, height = 3)
+```
+
+Stats.
+
+```{r}
+print(t.test(
+  dplyr::filter(dryweight, `Mouse group` == 'Veh\n(PO)')$pc_dry_weight,
+  dplyr::filter(dryweight, `Mouse group` == 'G_50\n(PO)')$pc_dry_weight
+))
+```

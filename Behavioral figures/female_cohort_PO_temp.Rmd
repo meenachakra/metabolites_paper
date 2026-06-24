@@ -1,0 +1,140 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-10-02"
+---
+
+Load libraries.
+
+```{r}
+library(dplyr)
+library(readxl)
+library(ggplot2)
+library(multcomp)
+```
+
+Load and modify data to fit the format we want.
+
+```{r}
+temp_data <- read_excel("Female cohort - PO/Data to plot - female cohort.xlsx", sheet = "Temp")
+temp_data$`Mouse Group` <- ifelse(temp_data$`Mouse Group` == 'Veh (PO)',
+                                  'Veh (PO)', 'G_50 (PO)')
+temp_data$`Mouse Group` <- factor(temp_data$`Mouse Group`,
+                                levels = c("Veh (PO)", "G_50 (PO)"))
+temp_data <- dplyr::rename(temp_data, MouseGroup = `Mouse Group`)
+```
+
+The desired outcome is "change from baseline," so calculate that.
+
+```{r}
+# Get the baseline temp of each mouse
+baseline <- temp_data[temp_data$Time == "Baseline", c("Mouse ID", "Value")]
+baseline <- dplyr::rename(baseline, Baseline_Temp=Value)
+
+# Merge back into DF
+temp_data <- merge(temp_data, baseline, by = "Mouse ID")
+
+# Calculate change from baseline
+temp_data$change_from_baseline <- temp_data$Value - temp_data$Baseline_Temp
+
+temp_data$Time <- ifelse(temp_data$Time == "Baseline",
+                         0, 60)
+
+# Summary stats: mean and SEM
+summary_temp_data <- aggregate(
+  change_from_baseline ~ MouseGroup + Time,
+  data = temp_data,
+  FUN = function(x) c(mean = mean(x), sem = sd(x) / sqrt(length(x)))
+)
+
+summary_temp_data <- do.call(data.frame, summary_temp_data)
+names(summary_temp_data)[3:4] <- c("mean", "sem")
+```
+
+Plot.
+
+```{r}
+summary_temp_data$MouseGroup <- factor(summary_temp_data$MouseGroup,
+                                levels = c("Veh (PO)", "G_50 (PO)"))
+
+p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGroup)) +
+  geom_hline(yintercept = 0, linetype = "dashed", linewidth = 0.35) +
+  
+  geom_jitter(
+    aes(group = MouseGroup),
+    position = position_jitterdodge(
+      jitter.width = 1.5,
+      jitter.height = 0,
+      dodge.width = 7
+    ),
+    size = 1.4,
+    alpha = 0.75
+  ) +
+  
+  geom_line(
+    data = summary_temp_data,
+    aes(x = Time, y = mean, color = MouseGroup, group = MouseGroup),
+    position = position_dodge(width = 7),
+    linewidth = 0.7,
+    inherit.aes = FALSE
+  ) +
+  
+  geom_point(
+    data = summary_temp_data,
+    aes(x = Time, y = mean, color = MouseGroup, group = MouseGroup),
+    position = position_dodge(width = 7),
+    size = 1.8,
+    inherit.aes = FALSE
+  ) +
+  
+  geom_errorbar(
+    data = summary_temp_data,
+    aes(
+      x = Time,
+      ymin = mean - sem,
+      ymax = mean + sem,
+      color = MouseGroup,
+      group = MouseGroup
+    ),
+    position = position_dodge(width = 7),
+    width = 1.8,
+    linewidth = 0.45,
+    inherit.aes = FALSE
+  ) +
+  
+  labs(
+    x = "Time after dosing (min)",
+    y = expression(Delta*" Temp vs. Baseline ("*degree*"C)"),
+    color = NULL
+  ) +
+  
+  scale_x_continuous(
+    breaks = c(0, 60)
+  ) +
+  
+  theme_classic() +
+  theme(
+    axis.text = element_text(color = "black", size = 8),
+    axis.title = element_text(color = "black", size = 10),
+    legend.text = element_text(size = 8),
+    legend.position = "right",
+    legend.key.size = unit(0.25, "cm"),
+    legend.spacing.y = unit(0.02, "cm"),
+    plot.margin = margin(3, 3, 3, 3)
+  ) + scale_color_manual(values = c("Veh (PO)" = "#008888",
+                                  "G_50 (PO)" = "#000080"))
+
+p
+
+ggsave("Female cohort - PO/Temp_graph.pdf", plot = p, height = 2, width = 4)
+```
+
+Stats at 60 min timepoint.
+
+```{r}
+# https://biostat.jhsph.edu/~iruczins/teaching/materials/code/av5/c.av5.a.html
+temp_data_60 <- dplyr::filter(temp_data, Time == 60)
+
+t.test(dplyr::filter(temp_data_60, MouseGroup == "Veh (PO)")$change_from_baseline,
+       dplyr::filter(temp_data_60, MouseGroup == "G_50 (PO)")$change_from_baseline)
+```
