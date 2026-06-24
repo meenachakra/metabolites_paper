@@ -16,22 +16,25 @@ library(ggpubr)
 Read in data.
 
 ```{r}
-dryweight <- read_excel("Female cohort - PO/Data to plot - female cohort.xlsx", sheet = "% dry weight")
-dryweight$`Mouse group` <- ifelse(dryweight$`Mouse group` == 'Veh (PO)', 'Veh\n(PO)', 'G_50\n(PO)')
-dryweight$`Mouse group` <- factor(dryweight$`Mouse group`,
+pellet <- read_excel("Female cohort - PO/Fecal pellet number data - female cohort.xlsx")
+pellet$Group <- ifelse(pellet$Group == 'Veh (PO)', 'Veh\n(PO)', 'G_50\n(PO)')
+pellet$Group <- factor(pellet$Group,
                                 levels = c('Veh\n(PO)',
                                            'G_50\n(PO)'))
 
-dryweight <- dplyr::rename(dryweight, pc_dry_weight=`% dry weight`)
+pellet <- dplyr::rename(pellet, pellet_num=`No. of Fecal Matter at the end of 1hr Activity Chamber`)
 ```
 
 Plot.
 
 ```{r}
-ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
-  geom_boxplot(aes(color = `Mouse group`), fill = NA, outlier.shape = NA, linewidth = 1) +
+ggplot(pellet, aes(x = Group, y = pellet_num)) +
+  geom_boxplot(aes(color = Group), fill = NA, outlier.shape = NA, linewidth = 1) +
   geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
   scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
+  scale_y_continuous(
+    breaks = seq(0, 10, by = 1)
+  ) +
   stat_compare_means(
     method = "t.test",
     label = "p.format",
@@ -47,16 +50,7 @@ ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
     axis.title.y = element_text(size = 12, color = "black"),
     axis.title.x = element_blank()
   ) +
-  labs(y = "% dry weight of fecal pellets") + ylim(0,90)
+  labs(y = "# pellets")
 
-ggsave("Female cohort - PO/dry_weight.pdf", width = 3, height = 3)
-```
-
-Stats.
-
-```{r}
-print(t.test(
-  dplyr::filter(dryweight, `Mouse group` == 'Veh\n(PO)')$pc_dry_weight,
-  dplyr::filter(dryweight, `Mouse group` == 'G_50\n(PO)')$pc_dry_weight
-))
+ggsave("Female cohort - PO/fecal_pellet_num.pdf", width = 3, height = 4)
 ```

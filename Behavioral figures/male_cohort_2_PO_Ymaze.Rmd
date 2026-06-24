@@ -106,8 +106,10 @@ entries_summary$`Mouse Group` <- ifelse(entries_summary$`Mouse Group` == 'Veh\n(
 entries_summary$`Mouse Group` <- factor(entries_summary$`Mouse Group`,
                                         levels = c("Veh (PO)", "G_10 (PO)", "G_50 (PO)"))
 
+entries_summary <- dplyr::rename(entries_summary, `Male Mouse\nGroup`=`Mouse Group`)
+
 # Plot line graph
-ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Mouse Group`, group = `Mouse Group`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative arm entries") +
+ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative arm entries") +
     scale_color_manual(values = c("Veh (PO)" = "#008888", "G_10 (PO)" = "#9f329f",
                                   "G_50 (PO)" = "#000080")) +
     theme_bw() +
@@ -185,8 +187,10 @@ distance_summary$`Mouse Group` <- ifelse(distance_summary$`Mouse Group` == 'Veh\
 distance_summary$`Mouse Group` <- factor(distance_summary$`Mouse Group`,
                                         levels = c("Veh (PO)", "G_10 (PO)", "G_50 (PO)"))
 
+distance_summary <- dplyr::rename(distance_summary, `Male Mouse\nGroup`=`Mouse Group`)
+
 # Plot line graph
-ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Mouse Group`, group = `Mouse Group`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance moved (cm/min)") +
+ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance moved (cm/min)") +
     scale_color_manual(values = c("Veh (PO)" = "#008888", "G_10 (PO)" = "#9f329f",
                                   "G_50 (PO)" = "#000080")) +
     theme_bw() +

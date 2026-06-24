@@ -55,7 +55,7 @@ plotting_func_alternation <- function(df, variable, ylab, fname, wid = 2, ht = 2
   ggplot(df, aes(x=`Mouse Group`, y=Value)) +
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
     geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
-    scale_color_manual(values = c("Veh\n(PO)" = "#008888", "G_50\n(PO)" = "#000080")) +
+    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
     geom_text(data = tests, aes(x = `Mouse Group`, y = y.position, label = label), vjust = 0, size = 3.5) +
     theme_bw() +
     theme(legend.position = "none",
@@ -104,9 +104,12 @@ entries_summary$`Mouse Group` <- ifelse(entries_summary$`Mouse Group` == 'Veh\n(
 entries_summary$`Mouse Group` <- factor(entries_summary$`Mouse Group`,
                                         levels = c("Veh (PO)", "G_50 (PO)"))
 
+entries_summary <- dplyr::rename(entries_summary, `Female Mouse\nGroup`=`Mouse Group`)
+
 # Plot line graph
-ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Mouse Group`, group = `Mouse Group`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative arm entries") +
-    scale_color_manual(values = c("Veh (PO)" = "#008888", "G_50 (PO)" = "#000080")) +
+ 
+ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Female Mouse\nGroup`, group = `Female Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative arm entries") +
+    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
     theme_bw() +
     theme(axis.line = element_line(color='black'),
       axis.text = element_text(size = 8, color = 'black'),
@@ -127,7 +130,7 @@ generic_boxplot_func <- function(df, variable, ylab,
   ggplot(df, aes(x=`Mouse Group`, y=Value)) +
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
     geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
-    scale_color_manual(values = c("Veh\n(PO)" = "#008888", "G_50\n(PO)" = "#000080")) +
+    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
     theme_bw() +
     theme(legend.position = "none",
       axis.line = element_line(color='black'),
@@ -173,9 +176,11 @@ distance_summary <- distance %>%
 distance_summary$`Mouse Group` <- ifelse(distance_summary$`Mouse Group` == 'Veh\n(PO)', 'Veh (PO)', 'G_50 (PO)')
 distance_summary$`Mouse Group` <- factor(distance_summary$`Mouse Group`, levels = c("Veh (PO)", "G_50 (PO)"))
 
+distance_summary <- dplyr::rename(distance_summary, `Female Mouse\nGroup`=`Mouse Group`)
+
 # Plot line graph
-ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Mouse Group`, group = `Mouse Group`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance moved (cm/min)") +
-    scale_color_manual(values = c("Veh (PO)" = "#008888", "G_50 (PO)" = "#000080")) +
+ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Female Mouse\nGroup`, group = `Female Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance moved (cm/min)") +
+    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
     theme_bw() +
     theme(axis.line = element_line(color='black'),
       axis.text = element_text(size = 8, color = 'black'),

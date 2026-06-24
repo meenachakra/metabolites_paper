@@ -121,8 +121,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
     legend.key.size = unit(0.25, "cm"),
     legend.spacing.y = unit(0.02, "cm"),
     plot.margin = margin(3, 3, 3, 3)
-  ) + scale_color_manual(values = c("Veh (PO)" = "#008888",
-                                  "G_50 (PO)" = "#000080"))
+  ) + scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E"))
 
 p
 
