@@ -55,7 +55,7 @@ plotting_func_alternation <- function(df, variable, ylab, fname, wid = 2, ht = 2
   ggplot(df, aes(x=`Mouse Group`, y=Value)) +
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
     geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
-    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
+    scale_color_manual(values = c("Veh\n(PO)" = "#E38AB8", "G_50\n(PO)" = "#E0B83E")) +
     geom_text(data = tests, aes(x = `Mouse Group`, y = y.position, label = label), vjust = 0, size = 3.5) +
     theme_bw() +
     theme(legend.position = "none",
@@ -130,7 +130,7 @@ generic_boxplot_func <- function(df, variable, ylab,
   ggplot(df, aes(x=`Mouse Group`, y=Value)) +
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
     geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
-    scale_color_manual(values = c("Veh (PO)" = "#E38AB8", "G_50 (PO)" = "#E0B83E")) +
+    scale_color_manual(values = c("Veh\n(PO)" = "#E38AB8", "G_50\n(PO)" = "#E0B83E")) +
     theme_bw() +
     theme(legend.position = "none",
       axis.line = element_line(color='black'),
