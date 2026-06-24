@@ -35,7 +35,7 @@ plotting_func <- function(df, trial, ylab,
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
     geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
     scale_color_manual(values = c("Veh\n(PO)" = "#E38AB8", "G_50\n(PO)" = "#E0B83E")) +
-    stat_compare_means( method = "t.test", label = "p.format", comparisons = list(c("Veh\n(PO)", "G_50\n(PO)")), hide.ns = FALSE) +
+    stat_compare_means( method = "t.test", label = "p.signif", comparisons = list(c("Veh\n(PO)", "G_50\n(PO)")), hide.ns = FALSE) +
     theme_bw() +
     theme(legend.position = "none",
       axis.line = element_line(color='black'),

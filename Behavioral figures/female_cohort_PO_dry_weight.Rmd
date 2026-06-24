@@ -34,7 +34,7 @@ ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
   scale_color_manual(values = c("Veh\n(PO)" = "#E38AB8", "G_50\n(PO)" = "#E0B83E")) +
   stat_compare_means(
     method = "t.test",
-    label = "p.format",
+    label = "p.signif",
     comparisons = list(c("Veh\n(PO)", "G_50\n(PO)")),
     hide.ns = FALSE
   ) +
