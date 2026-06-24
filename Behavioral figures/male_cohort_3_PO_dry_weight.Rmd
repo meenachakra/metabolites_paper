@@ -47,9 +47,9 @@ ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
     axis.title.y = element_text(size = 12, color = "black"),
     axis.title.x = element_blank()
   ) +
-  labs(y = "% dry weight of fecal pellets") + ylim(0,70)
+  labs(y = "% dry weight") + ylim(0,100)
 
-ggsave("Male cohort 3 - PO/dry_weight.pdf", width = 3, height = 3)
+ggsave("Male cohort 3 - PO/dry_weight.pdf", width = 2, height = 2)
 ```
 
 Stats.
