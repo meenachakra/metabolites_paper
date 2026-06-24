@@ -29,7 +29,7 @@ Plotting function for each trial.
 
 ```{r}
 plotting_func <- function(df, trial, ylab,
-                          fname, wid = 2, ht = 2) {
+                          fname, ttl, wid = 2, ht = 2) {
   df <- dplyr::filter(df, Trial == trial)
   ggplot(df, aes(x=`Mouse Group`, y=latency)) +
     geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
@@ -43,7 +43,7 @@ plotting_func <- function(df, trial, ylab,
       axis.text.x = element_text(size = 10, color = 'black'),
       axis.title.y = element_text(size = 10, color = 'black'),
       axis.title.x = element_blank()) +
-    labs(y = ylab) + ylim(0,45)
+    labs(y = ylab, title = ttl) + ylim(0,50)
   
   ggsave(fname, width = wid, height = ht)
 }
@@ -54,15 +54,18 @@ Apply the plotting function.
 ```{r}
 # 60min_PD_16rpm
 plotting_func(rotarod, "60min_PD_16rpm",
-              "Latency to fall (s)", "Female cohort - PO/rotarod_60min_PD_16rpm.pdf")
+              "Latency to fall (s)", "Female cohort - PO/rotarod_60min_PD_16rpm.pdf",
+              "60min_PD_16rpm")
 
 # 15min_PD_16rpm
 plotting_func(rotarod, "15min_PD_16rpm",
-              "Latency to fall (s)", "Female cohort - PO/rotarod_15min_PD_16rpm.pdf")
+              "Latency to fall (s)", "Female cohort - PO/rotarod_15min_PD_16rpm.pdf",
+              "15min_PD_16rpm")
 
 # 15min_PD_32rpm
 plotting_func(rotarod, "15min_PD_32rpm",
-              "Latency to fall (s)", "Female cohort - PO/rotarod_15min_PD_32rpm.pdf")
+              "Latency to fall (s)", "Female cohort - PO/rotarod_15min_PD_32rpm.pdf",
+              "15min_PD_32rpm")
 ```
 
 Stats. Really only relevant for 15min_PD_32rpm.
