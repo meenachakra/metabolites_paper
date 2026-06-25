@@ -30,7 +30,7 @@ Plot.
 ```{r}
 ggplot(dryweight, aes(x = `Mouse group`, y = pc_dry_weight)) +
   geom_boxplot(aes(color = `Mouse group`), fill = NA, outlier.shape = NA, linewidth = 1) +
-  geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
+  geom_point(color = "grey", position = position_jitter(width = 0.09), size = 1) +
   scale_color_manual(values = c("Veh\n(PO)" = "#008888", "G_50\n(PO)" = "#000080")) +
   stat_compare_means(
     method = "t.test",
