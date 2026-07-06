@@ -38,7 +38,7 @@ temp_data <- merge(temp_data, baseline, by = "Mouse ID")
 temp_data$change_from_baseline <- temp_data$Value - temp_data$Baseline_Temp
 
 temp_data$Time <- ifelse(temp_data$Time == "Baseline",
-                         0, 60)
+                         -1, 60)
 
 # Summary stats: mean and SEM
 summary_temp_data <- aggregate(
@@ -109,7 +109,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
   ) +
   
   scale_x_continuous(
-    breaks = c(0, 60)
+    breaks = c(-1, 60)
   ) +
   
   theme_classic() +

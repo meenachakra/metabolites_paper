@@ -27,7 +27,7 @@ The desired outcome is "change from baseline," so calculate that.
 
 ```{r}
 # Get the baseline temp of each mouse
-baseline <- temp_data[temp_data$Time == 0, c("Mouse ID", "Value")]
+baseline <- temp_data[temp_data$Time == "Baseline", c("Mouse ID", "Value")]
 baseline <- dplyr::rename(baseline, Baseline_Temp=Value)
 
 # Merge back into DF
@@ -35,6 +35,10 @@ temp_data <- merge(temp_data, baseline, by = "Mouse ID")
 
 # Calculate change from baseline
 temp_data$change_from_baseline <- temp_data$Value - temp_data$Baseline_Temp
+
+# Change Baseline to -1 to facilitate plotting
+temp_data$Time <- ifelse(temp_data$Time == "Baseline",
+                         -1, temp_data$Time)
 
 # Summary stats: mean and SEM
 summary_temp_data <- aggregate(
@@ -50,6 +54,10 @@ names(summary_temp_data)[3:4] <- c("mean", "sem")
 Plot.
 
 ```{r}
+# Need the following lines to enable plotting
+summary_temp_data$Time <- as.numeric(summary_temp_data$Time)
+temp_data$Time <- as.numeric(temp_data$Time)
+
 summary_temp_data$MouseGroup <- factor(summary_temp_data$MouseGroup,
                                 levels = c("Veh (PO)", "G_10 (PO)", "G_50 (PO)"))
 
@@ -105,7 +113,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
   ) +
   
   scale_x_continuous(
-    breaks = c(0, 10, 30, 60)
+    breaks = c(-1, 10, 30, 60)
   ) +
   
   theme_classic() +
