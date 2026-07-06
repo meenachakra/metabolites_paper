@@ -292,10 +292,10 @@ ggplot(sample_cooks_df, aes(x = sample, y = mean_cooks)) +
   labs(
     x = NULL,
     y = "Mean Cook's distance ± SEM",
-    title = "Mean Cook's distance per sample"
+    title = "Mean Cook's distance\nper sample"
   )
 
-ggsave("cooks_distance_tmao_samples.pdf", width = 5, height = 4)
+ggsave("cooks_distance_tmao_samples.pdf", width = 3, height = 5)
 ```
 
 Make the plot, for the supplement, showing the abundance of hemoglobin genes across samples.
@@ -354,14 +354,14 @@ ggplot(long_hb, aes(x = variable, y = value, group = gene_names)) +
     x = "Sample",
     y = "TPM") +
   theme(
-    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, color = "black", size = 12),
-    axis.text.y = element_text(color = "black", size = 12),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, color = "black", size = 10),
+    axis.text.y = element_text(color = "black", size = 10),
     axis.title.x = element_blank(),
     axis.title.y = element_text(color = "black", size = 14),
     strip.text = element_text(color = "black", size = 14),
     legend.position = "none")
 
-ggsave("hemoglobin_genes_plot.pdf", width = 7, height = 6)
+ggsave("hemoglobin_genes_plot.pdf", width = 5, height = 5)
 ```
 
 Now run DESeq2 for TMAO excluding the outlier sample.
