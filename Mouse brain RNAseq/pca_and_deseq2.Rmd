@@ -157,7 +157,7 @@ ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(condition), label=name)) + geo
         legend.text=element_text(size=12, color = 'black'),
         legend.title=element_blank()) 
   
-ggsave('expt1_samples_pca.pdf', width = 5, height = 5)
+ggsave('expt1_samples_pca.pdf', width = 4, height = 5)
 
 # All other samples
 expt2_conditions_minimal_dummy <- expt2_conditions_minimal
@@ -188,7 +188,7 @@ ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(batch), label=name)) + geom_po
         legend.text=element_text(size=12, color = 'black'),
         legend.title=element_blank()) 
   
-ggsave('expt2_samples_pca.pdf', width = 5, height = 5)
+ggsave('expt2_samples_pca.pdf', width = 4, height = 5)
 ```
 
 Conduct DESeq2 for TMAO outlier sample vs. other samples.
@@ -296,6 +296,72 @@ ggplot(sample_cooks_df, aes(x = sample, y = mean_cooks)) +
   )
 
 ggsave("cooks_distance_tmao_samples.pdf", width = 5, height = 4)
+```
+
+Make the plot, for the supplement, showing the abundance of hemoglobin genes across samples.
+
+```{r}
+hb_genes <- data.frame(gene_names = c("Hba-a1", "Hba-a2", "Hbb-bt", "Hbb-bs"),
+                       gene_ids = c("ENSMUSG00000069919.8",
+                                    "ENSMUSG00000069917.8",
+                                    "ENSMUSG00000073940.4",
+                                    "ENSMUSG00000052305.7"))
+
+tmao_hb_abundances <- data.frame(txi_tmao_samples$abundance) %>%
+  tibble::rownames_to_column(., var = "Gene") %>%
+  dplyr::filter(., Gene %in% hb_genes$gene_ids)
+
+tmao_hb_abundances <- merge(tmao_hb_abundances, hb_genes, by.x = "Gene", by.y = "gene_ids")
+tmao_hb_abundances <- dplyr::select(tmao_hb_abundances, -Gene)
+
+expt2_hb_abundances <- data.frame(txi_expt2_samples$abundance) %>%
+  tibble::rownames_to_column(., var = "Gene") %>%
+  dplyr::filter(., Gene %in% hb_genes$gene_ids)
+
+expt2_hb_abundances <- merge(expt2_hb_abundances, hb_genes, by.x = "Gene", by.y = "gene_ids")
+expt2_hb_abundances <- dplyr::select(expt2_hb_abundances, -Gene)
+
+# Merge
+tmao_hb_abundances <- dplyr::rename(tmao_hb_abundances,
+                                    S_1_Expt1=S_1,
+                                    S_2_Expt1=S_2,
+                                    S_3_Expt1=S_3,
+                                    S_4_Expt1=S_4)
+
+expt2_hb_abundances <- dplyr::rename(expt2_hb_abundances,
+                                     S_1_Expt2=S_1,
+                                    S_2_Expt2=S_2,
+                                    S_3_Expt2=S_3,
+                                    S_4_Expt2=S_4)
+
+merged_hb_abundances <- merge(tmao_hb_abundances, expt2_hb_abundances,
+                              by = "gene_names")
+
+merged_hb_abundances$gene_names <- factor(merged_hb_abundances$gene_names,
+                                          levels = c("Hba-a1", "Hbb-bt", "Hba-a2", "Hbb-bs"))
+
+long_hb <- reshape2::melt(
+  merged_hb_abundances,
+  id.vars = "gene_names"
+)
+
+ggplot(long_hb, aes(x = variable, y = value, group = gene_names)) +
+  geom_line(linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_wrap(~ gene_names, ncol = 1, scales = "free_y") +
+  theme_classic() +
+  labs(
+    x = "Sample",
+    y = "TPM") +
+  theme(
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, color = "black", size = 12),
+    axis.text.y = element_text(color = "black", size = 12),
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(color = "black", size = 14),
+    strip.text = element_text(color = "black", size = 14),
+    legend.position = "none")
+
+ggsave("hemoglobin_genes_plot.pdf", width = 7, height = 6)
 ```
 
 Now run DESeq2 for TMAO excluding the outlier sample.
