@@ -434,7 +434,7 @@ num_degs_per_metab_no_dups$num_degs <- as.numeric(num_degs_per_metab_no_dups$num
 Plot.
 
 ```{r}
-metabolites <- c('Phenylacetylglutamine', 'Cholic acid', 'Indoleacetic acid', 'Imidazole propionate', 'p-Cresol sulfate', 'Hippuric acid', 'Oxalic acid*', 'Glyceric acid', 'Isoleucine', 'Valine', 'Glycine', 'Carnitine*', '3-hydroxybutyrate', 'Alpha-ketoglutaric acid', 'Glycodeoxycholic acid*', 'Nicotinamide', 'Pantothenic acid', 'Quinolinic acid*', 'Malic acid', 'Trimethylamine N-oxide', 'Choline', 'Citrulline', 'Allantoin', 'Methyl-indoleacetic acid', 'Palmitic acid', 'Indolelactic acid', 'N-acetylalanine', 'Hypoxanthine', 'Uric acid', 'Lysine')
+metabolites <- c('Phenylacetylglutamine', 'Cholate', 'Indoleacetate', 'Imidazole propionate', 'p-Cresol sulfate', 'Hippurate', 'Oxalate*', 'Glycerate', 'Isoleucine', 'Valine', 'Glycine', 'Carnitine*', '3-hydroxybutyrate', 'Alpha-ketoglutarate', 'Glycodeoxycholate*', 'Nicotinamide', 'Pantothenate', 'Quinolinate*', 'Malate', 'Trimethylamine N-oxide', 'Choline', 'Citrulline', 'Allantoin', 'Methyl indole-3-acetate', 'Palmitate', 'Indolelactate', 'N-acetylalanine', 'Hypoxanthine', 'Urate', 'Lysine')
 
 num_degs_per_metab_no_dups$nice_metab <- metabolites
 
