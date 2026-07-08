@@ -27,7 +27,7 @@ Used the following MACS2 command (again using version 2.1.1):
 macs2 callpeak -t <brain_name>.pooled.bam -n <brain_name>.pooled.MACS2 -g mm -f BAMPE --to-large -p 1e-1 --keep-dup all --nomodel
 ```
 
-## Sorted the pooled BAM files and generate pseudoreplicates
+## Sorted the pooled BAM files and generated pseudoreplicates
 
 For sorting, the following command was run for each of the brains.
 
