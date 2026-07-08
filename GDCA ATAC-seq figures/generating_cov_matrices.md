@@ -7,7 +7,7 @@ Manually edited the headers of up_peaks_input_for_cov_heatmaps.bed and down_peak
 
 # Merged the bams for each brain per condition (created during the IDR procedure)
 
-Used the following code. Excluded Brain 3 due to low TSS, as we did for the DESeq2 analysis.
+Used the following code. Excluded Brain 3 due to low TSS enrichment, as we did for the DESeq2 analysis.
 
 ```
 samtools merge --threads 4 merged_saline_no_brain3.bam Brain_1_pooled.sorted.bam Brain_5_pooled.sorted.bam Brain_7_pooled.sorted.bam
