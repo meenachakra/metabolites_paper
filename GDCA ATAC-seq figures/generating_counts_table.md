@@ -170,8 +170,7 @@ Script used: bed_to_saf_updated.py in the merged_peaks subfolder of this folder.
 
 Explanation of script:
 
-BED format uses a 0-based, half-open coordinate system
-Source: https://samtools.github.io/hts-specs/BEDv1.pdf
+BED format uses a 0-based, half-open coordinate system (Source: https://samtools.github.io/hts-specs/BEDv1.pdf)
 
 For SAF (used for featureCounts, below), the start and end positions are inclusive, see source here:
 https://bioconductor.org/packages/release/bioc/vignettes/Rsubread/inst/doc/SubreadUsersGuide.pdf
