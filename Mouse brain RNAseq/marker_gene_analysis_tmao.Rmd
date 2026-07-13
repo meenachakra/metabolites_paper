@@ -76,6 +76,7 @@ markers_sig <- dplyr::filter(markers_all,
                              p_val_adj <= 0.05)
 
 saveRDS(markers_sig, "significant_markers_per_class_ximerakis.rds")
+write.table(markers_sig, "significant_markers_per_class_ximerakis.tsv", sep = '\t', quote = FALSE, row.names = FALSE)
 ```
 
 Read in differential expression results, and merge.
