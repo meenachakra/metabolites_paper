@@ -82,5 +82,5 @@ ggplot(plot_df, aes(x = short_name, y = pct_down)) +
         axis.text.x = element_text(color = 'black', size = 10),
         panel.grid = element_blank())
 
-ggsave('pc_marker_genes_downregulated_by_gdca_per_class.pdf', height = 3, width = 3.75)
+ggsave('pc_marker_genes_downregulated_by_gdca_per_class.pdf', height = 2.5, width = 3.75)
 ```
