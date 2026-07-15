@@ -8,7 +8,7 @@ https://pubmed.ncbi.nlm.nih.gov/33606259/
 The following command was run - using MACS2 version 2.1.1 - for each of the 16 replicates (two replicates per brain, each representing an independent set of nuclei).
 
 ```
-macs2 callpeak -t <replicate_name>.2x36mers.mm10.unique.dedup.bam -n <replicate_name>.MACS2 -g mm -f BAMPE --to-large -p 1e-1 --keep-dup all --nomodel
+macs2 callpeak -t <replicate_name>.bam -n <replicate_name>.MACS2 -g mm -f BAMPE --to-large -p 1e-1 --keep-dup all --nomodel
 ```
 
 ## Merged BAM files for the individual replicates from each brain
@@ -16,7 +16,7 @@ macs2 callpeak -t <replicate_name>.2x36mers.mm10.unique.dedup.bam -n <replicate_
 The following command was run for each of the brains.
 
 ```
-samtools merge <brain_name>.pooled.bam <brain_rep1>.2x36mers.mm10.unique.dedup.bam <brain_rep2>.2x36mers.mm10.unique.dedup.bam 
+samtools merge <brain_name>.pooled.bam <brain_rep1>.bam <brain_rep2>.bam 
 ```
 
 ## Called peaks for the pooled dataset for each brain
