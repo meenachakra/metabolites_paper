@@ -35,6 +35,9 @@ For sorting, the following command was run for each of the brains.
 samtools sort -o <brain_name>.pooled.sorted.bam <brain_name>.pooled.bam --threads 4
 ```
 
+[Note that the pooled bam files above were actually already sorted based on samtools stats;
+sorted explicitly just in case, based on the article.]
+
 To generate pseudoreplicates:
 - The script BAMPseudoReps.py from the Github repository https://github.com/georgimarinov/GeorgiScripts was converted to Python 3 using the program 2to3. The conversion was executed using Python 3.10.
 - On July 9, 2025, the following file was downloaded and unzipped: https://hgdownload.soe.ucsc.edu/goldenPath/mm10/bigZips/mm10.fa.gz
