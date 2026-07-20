@@ -99,9 +99,10 @@ ann_stats_present_peaks <- ann_stats_present_peaks %>%
     pval = exp(-abs(Signed_logP)), # log of p-value between 0 and 1 will always be negative so have to make sure you're including that negative in the exponentiation
     direction = ifelse(Signed_logP < 0, "Obs > Exp", "Obs < Exp"), # because + values are depleted according to the original column header
     stars = case_when(
-      pval < 0.001 ~ "***",
-      pval < 0.01  ~ "**",
-      pval < 0.05  ~ "*",
+      pval <= 0.0001 ~ "****",
+      pval <= 0.001 ~ "***",
+      pval <= 0.01  ~ "**",
+      pval <= 0.05  ~ "*",
       TRUE ~ ""
     )
   )
