@@ -29,10 +29,14 @@ For each of the four batches, set up a table with the following columns:
 - Condition
 - Path (to Kallisto results)
 
+Write a function to do this.
+
 Based on:
 https://pachterlab.github.io/sleuth_walkthroughs/trapnell/analysis.html
 
-Write a function to do this.
+and:
+https://pachterlab.github.io/sleuth_walkthroughs/pval_agg/analysis.html
+(for the fact that we can point directly to h5 files)
 
 ```{r}
 conditions_table <- function(batch_number, kallisto_dir) {
@@ -47,7 +51,8 @@ conditions_table <- function(batch_number, kallisto_dir) {
   table <- dplyr::rename(table, sample = `Sample name`, condition = Treatment)
   
   # Add path
-  table$path <- file.path(kallisto_dir, paste0('kallisto_out_', table$sample))
+  # Modify this code according to your file organization
+  table$path <- file.path(kallisto_dir, paste0('kallisto_out_', sub("^[^_]*_", "", table$sample)), paste0(table$sample, "_abundance.h5"))
   
   # Ensure that condition is a factor
   table$condition <- factor(table$condition, levels=unique(table$condition))
@@ -60,15 +65,19 @@ Call the function for each batch.
 ```{r}
 # Batch 1
 conditions_1 <- conditions_table(1, '/personal/path/to/batch1/kallisto/files')
+# the kallisto outputs for each sample should be within an independent subfolder of the path specified above
 
 # Batch 2
 conditions_2 <- conditions_table(2, '/personal/path/to/batch2/kallisto/files')
+# the kallisto outputs for each sample should be within an independent subfolder of the path specified above
 
 # Batch 3
 conditions_3 <- conditions_table(3, '/personal/path/to/batch3/kallisto/files')
+# the kallisto outputs for each sample should be within an independent subfolder of the path specified above
 
 # Batch 4
 conditions_4 <- conditions_table(4, '/personal/path/to/batch4/kallisto/files')
+# the kallisto outputs for each sample should be within an independent subfolder of the path specified above
 ```
 
 Helper functions for PCA - df_for_pca and pca_function.
@@ -122,6 +131,8 @@ pca_plotting <- function(conditions_df, fig_title, treatment_levels, ht=3.5, wd=
         legend.title = element_text(size=14, color='black')) 
   
   ggsave(fig_title, height=ht, width=wd)
+  
+  return(pca_result)
 }
 ```
 
@@ -130,24 +141,24 @@ Make the specific PCAs we need for the paper.
 ```{r}
 # Batch 1 all DMSO samples
 conditions_1_dmso <- dplyr::filter(conditions_1, condition %in% c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate"))
-pca_plotting(conditions_1_dmso, 'pca_plots/batch_1_dmso_samples.pdf',
+plotted_1_dmso <- pca_plotting(conditions_1_dmso, 'pca_plots/batch_1_dmso_samples.pdf',
              c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate"))
 
 # Batch 1 all H2O samples
 conditions_1_h2o <- dplyr::filter(conditions_1, !(condition %in% c("DMSO control", "Phenylacetylglutamine", "Cholate", "Indoleacetate")))
-pca_plotting(conditions_1_h2o, 'pca_plots/batch_1_h2o_samples.pdf', unique(conditions_1_h2o$condition))
+plotted_1_h2o <- pca_plotting(conditions_1_h2o, 'pca_plots/batch_1_h2o_samples.pdf', unique(conditions_1_h2o$condition))
 
 # Batch 2 all samples
-pca_plotting(conditions_2, 'pca_plots/batch_2_all_samples.pdf', unique(conditions_2$condition))
+plotted_2 <- pca_plotting(conditions_2, 'pca_plots/batch_2_all_samples.pdf', unique(conditions_2$condition))
 
 # Batch 3 all samples
-pca_plotting(conditions_3, 'pca_plots/batch_3_all_samples.pdf', unique(conditions_3$condition))
+plotted_3 <- pca_plotting(conditions_3, 'pca_plots/batch_3_all_samples.pdf', unique(conditions_3$condition))
 
 # Batch 4 all DMSO samples
 conditions_4_dmso <- dplyr::filter(conditions_4, !(condition %in% c("H2O control", "LPS control", "Urate", "Lysine")))
-pca_plotting(conditions_4_dmso, 'pca_plots/batch_4_dmso_samples.pdf', unique(conditions_4_dmso$condition))
+plotted_4_dmso <- pca_plotting(conditions_4_dmso, 'pca_plots/batch_4_dmso_samples.pdf', unique(conditions_4_dmso$condition))
 
 # Batch 4 all H2O samples
 conditions_4_h2o <- dplyr::filter(conditions_4, condition %in% c("H2O control", "LPS control", "Urate", "Lysine"))
-pca_plotting(conditions_4_h2o, 'pca_plots/batch_4_h2o_samples.pdf', unique(conditions_4_h2o$condition))
+plotted_4_h2o <- pca_plotting(conditions_4_h2o, 'pca_plots/batch_4_h2o_samples.pdf', unique(conditions_4_h2o$condition))
 ```

@@ -59,7 +59,7 @@ Write a tximport function that can read in the kallisto transcript-level counts 
 ```{r}
 tximport_function <- function(sample_condition_df, kallisto_dir) {
   # Construct file paths for each sample’s Kallisto output
-  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sub("^[^_]*_", "", sample_condition_df$sample)), paste0(sample_condition_df$sample, "_abundance.tsv"))
   names(files) <- sample_condition_df$sample
   
   # Read in the corresponding kallisto results and aggregate to gene level
@@ -146,7 +146,7 @@ batch2_conditions <- dplyr::rename(batch2_conditions, sample = `Sample name`, co
 batch2_conditions$condition <- factor(batch2_conditions$condition, levels = unique(batch2_conditions$condition))
 
 # filter out outliers previously identified during PCA/QC analysis
-batch2_conditions <- dplyr::filter(batch2_conditions, !(sample %in% c('Oxalate_1', 'Carnitine_2')))
+batch2_conditions <- dplyr::filter(batch2_conditions, !(sample %in% c('Batch2_Oxalate1', 'Batch2_Carnitine2')))
 
 # Batch 3
 batch3_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
@@ -157,7 +157,7 @@ batch3_conditions <- dplyr::rename(batch3_conditions, sample = `Sample name`, co
 batch3_conditions$condition <- factor(batch3_conditions$condition, levels = unique(batch3_conditions$condition))
 
 # filter out outliers previously identified during PCA/QC analysis
-batch3_conditions <- dplyr::filter(batch3_conditions, !(sample %in% c('GDCA_1', 'Quin_2')))
+batch3_conditions <- dplyr::filter(batch3_conditions, !(sample %in% c('Batch3_GDCA1', 'Batch3_Quin2')))
 
 # Batch 4
 batch4_conditions <- read_excel("sample_info_transcriptomic_screen.xlsx") %>%
@@ -168,7 +168,7 @@ batch4_conditions <- dplyr::rename(batch4_conditions, sample = `Sample name`, co
 batch4_conditions$condition <- factor(batch4_conditions$condition, levels = unique(batch4_conditions$condition))
 
 # filter out outliers previously identified during PCA/QC analysis
-batch4_conditions <- dplyr::filter(batch4_conditions, !(sample == 'DMSO_5'))
+batch4_conditions <- dplyr::filter(batch4_conditions, !(sample == 'Batch4_DMSO5'))
 ```
 
 Function to output DEGs.
@@ -228,7 +228,7 @@ Batch 1 wrapper.
 
 ```{r}
 deseq2_wrapper_batch1 <- function(conditions_of_interest, fprefix, min_group_size=3) {
-  deseq2_output <- deseq2_function(batch1_conditions, conditions_of_interest, '/personal/path/to/batch1/kallisto/files', smallestGroupSize=min_group_size)
+  deseq2_output <- deseq2_function(batch1_conditions, conditions_of_interest, '/personal/path/to/kallisto/batch1/files', smallestGroupSize=min_group_size)
   output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch1/', fprefix)
   return(deseq2_output)
 }
@@ -238,7 +238,7 @@ Batch 2 wrapper.
 
 ```{r}
 deseq2_wrapper_batch2 <- function(conditions_of_interest, fprefix, min_group_size=3) {
-  deseq2_output <- deseq2_function(batch2_conditions, conditions_of_interest, '/personal/path/to/batch2/kallisto/files', smallestGroupSize=min_group_size)
+  deseq2_output <- deseq2_function(batch2_conditions, conditions_of_interest, '/personal/path/to/kallisto/batch2/files', smallestGroupSize=min_group_size)
   output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch2/', fprefix)
   return(deseq2_output)
 }
@@ -248,7 +248,7 @@ Batch 3 wrapper.
 
 ```{r}
 deseq2_wrapper_batch3 <- function(conditions_of_interest, fprefix, min_group_size=3) {
-  deseq2_output <- deseq2_function(batch3_conditions, conditions_of_interest, '/personal/path/to/batch3/kallisto/files', smallestGroupSize=min_group_size)
+  deseq2_output <- deseq2_function(batch3_conditions, conditions_of_interest, '/personal/path/to/kallisto/batch3/files', smallestGroupSize=min_group_size)
   output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch3/', fprefix)
   return(deseq2_output)
 }
@@ -258,7 +258,7 @@ Batch 4 wrapper.
 
 ```{r}
 deseq2_wrapper_batch4 <- function(conditions_of_interest, fprefix, min_group_size=3) {
-  deseq2_output <- deseq2_function(batch4_conditions, conditions_of_interest, '/personal/path/to/batch4/kallisto/files', smallestGroupSize=min_group_size)
+  deseq2_output <- deseq2_function(batch4_conditions, conditions_of_interest, '/personal/path/to/kallisto/batch4/files', smallestGroupSize=min_group_size)
   output_degs(deseq2_output[["results"]], 'deseq2_outputs/batch4/', fprefix)
   return(deseq2_output)
 }
@@ -459,38 +459,38 @@ Corrplot - sanity check that same-solvent controls on different plates can be gr
 
 ```{r}
 # Batch 1 - H2O controls on different plates
-batch_1_h2o <- tximport_function(dplyr::filter(batch1_conditions, condition == 'H2O control'), '/personal/path/to/batch1/kallisto/files')
+batch_1_h2o <- tximport_function(dplyr::filter(batch1_conditions, condition == 'H2O control'), '/personal/path/to/kallisto/batch1/files')
 # Log transform the gene abundances
 abundances <- log(batch_1_h2o$abundance + 0.5) # using same log transformation we used for PCA
 correlation_matrix <- cor(abundances)
-pdf('corrplot/batch1.pdf', height=4, width=4)
+pdf('corrplot/batch1.pdf', height=5, width=5)
 corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
 dev.off()
 
 # Batch 2 - same
-batch_2_h2o <- tximport_function(dplyr::filter(batch2_conditions, condition == 'H2O control'), '/personal/path/to/batch2/kallisto/files')
+batch_2_h2o <- tximport_function(dplyr::filter(batch2_conditions, condition == 'H2O control'), '/personal/path/to/kallisto/batch2/files')
 # Log transform the gene abundances
 abundances <- log(batch_2_h2o$abundance + 0.5) # using same log transformation we used for PCA
 correlation_matrix <- cor(abundances)
-pdf('corrplot/batch2.pdf', height=4, width=4)
+pdf('corrplot/batch2.pdf', height=5, width=5)
 corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
 dev.off()
 
 # Batch 3 - same
-batch_3_h2o <- tximport_function(dplyr::filter(batch3_conditions, condition == 'H2O control'), '/personal/path/to/batch3/kallisto/files')
+batch_3_h2o <- tximport_function(dplyr::filter(batch3_conditions, condition == 'H2O control'), '/personal/path/to/kallisto/batch3/files')
 # Log transform the gene abundances
 abundances <- log(batch_3_h2o$abundance + 0.5) # using same log transformation we used for PCA
 correlation_matrix <- cor(abundances)
-pdf('corrplot/batch3.pdf', height=4, width=4)
+pdf('corrplot/batch3.pdf', height=5, width=5)
 corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
 dev.off()
 
 # Batch 4 - DMSO controls on different plates
-batch_4_h2o <- tximport_function(dplyr::filter(batch4_conditions, condition == 'DMSO control'), '/personal/path/to/batch4/kallisto/files')
+batch_4_h2o <- tximport_function(dplyr::filter(batch4_conditions, condition == 'DMSO control'), '/personal/path/to/kallisto/batch4/files')
 # Log transform the gene abundances
 abundances <- log(batch_4_h2o$abundance + 0.5) # using same log transformation we used for PCA
 correlation_matrix <- cor(abundances)
-pdf('corrplot/batch4.pdf', height=4, width=4)
+pdf('corrplot/batch4.pdf', height=5, width=5)
 corrplot(correlation_matrix, method = 'circle', addCoef.col = 'white', number.cex = 0.7)
 dev.off()
 ```
