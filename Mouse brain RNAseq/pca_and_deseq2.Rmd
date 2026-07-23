@@ -344,8 +344,8 @@ tmao_hb_abundances <- dplyr::rename(tmao_hb_abundances,
                                     S_4_Expt1=Expt1_S3,
                                     TMAO_1 = Expt1_TMAO1,
                                     TMAO_2 = Expt1_TMAO2,
-                                    TMAO_3 = Expt1_TMAO2,
-                                    TMAO_4 = Expt1_TMAO2)
+                                    TMAO_3 = Expt1_TMAO3,
+                                    TMAO_4 = Expt1_TMAO4)
 
 expt2_hb_abundances <- dplyr::rename(expt2_hb_abundances,
                                      S_1_Expt2=Expt2_S1,
