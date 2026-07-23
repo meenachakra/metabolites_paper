@@ -90,7 +90,7 @@ df_for_pca <- function(relevant_conditions_df) {
   so <- sleuth_prep(relevant_conditions_df) # we don't need the extra bootstrap summary for PCA
   norm_kallisto <- kallisto_table(so, use_filtered = TRUE, normalized = TRUE)
   norm_kallisto <- select(norm_kallisto, target_id, sample, tpm)
-  norm_kallisto$tpm <- log(norm_kallisto$tpm + 0.5) # natural log and 0.5 because that's what sleuth does normally
+  norm_kallisto$tpm <- log(norm_kallisto$tpm + 0.5)
   norm_kallisto <- norm_kallisto %>% pivot_wider(names_from = target_id, values_from = tpm) %>% tibble::column_to_rownames(., "sample")
   return(norm_kallisto)
 }
