@@ -52,6 +52,7 @@ First, write a tximport function that can read in the kallisto transcript-level 
 ```{r}
 tximport_function <- function(sample_condition_df, kallisto_dir) {
   # Construct file paths for each sample’s Kallisto output
+  # Adjust according to your file organization structure
   files <- file.path(kallisto_dir, paste0('kallisto_out_', sub("^[^_]*_", "", sample_condition_df$sample)), paste0(sample_condition_df$sample, "_abundance.tsv"))
   names(files) <- sample_condition_df$sample
   
