@@ -52,7 +52,7 @@ First, write a tximport function that can read in the kallisto transcript-level 
 ```{r}
 tximport_function <- function(sample_condition_df, kallisto_dir) {
   # Construct file paths for each sample’s Kallisto output
-  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sub("^[^_]*_", "", sample_condition_df$sample)), paste0(sample_condition_df$sample, "_abundance.tsv"))
   names(files) <- sample_condition_df$sample
   
   # Read in the corresponding kallisto results and aggregate to gene level
@@ -85,8 +85,8 @@ tmao_conditions_minimal$condition <- factor(tmao_conditions_minimal$condition, l
 expt2_conditions_minimal$condition <- factor(expt2_conditions_minimal$condition, levels = c("Saline", "GDCA", "Saline + DMSO", "PA", "IAA"))
 
 # Apply tximport function
-txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
-txi_expt2_samples <- tximport_function(expt2_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/path/to/expt1/kallisto/files')
+txi_expt2_samples <- tximport_function(expt2_conditions_minimal, '/path/to/expt2/kallisto/files')
 ```
 
 Want to make a PCA plot for each of these DFs. Use the vst option from DESeq2.
@@ -142,6 +142,11 @@ vsd <- vst(deseq2_output_tmao_samples[[2]], blind = TRUE)
 pca_res <- plotPCA(vsd, returnData = TRUE)
 percentVar <- round(100 * attr(pca_res, "percentVar"))
 
+# Want shorter name for label, and add an underscore
+pca_res$name <- pca_res$name %>%
+  str_extract("[^_]+$") %>%
+  str_replace("([A-Za-z]+)([0-9]+)$", "\\1_\\2")
+
 ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(condition), label=name)) + geom_point() + geom_text(nudge_x = 0.3, nudge_y = 0.3, show.legend = FALSE) +
     labs(x = paste0('PC1 (', percentVar[1], '% Variance Explained)'),
          y = paste0('PC2 (', percentVar[2], '% Variance Explained)'),
@@ -173,6 +178,11 @@ percentVar <- round(100 * attr(pca_res, "percentVar"))
 pca_res$batch <- paste0("Batch",
                         substr(pca_res$name, nchar(pca_res$name), nchar(pca_res$name)))
 
+# Want shorter name for label, and add an underscore
+pca_res$name <- pca_res$name %>%
+  str_extract("[^_]+$") %>%
+  str_replace("([A-Za-z]+)([0-9]+)$", "\\1_\\2")
+
 ggplot(pca_res, aes(x=PC1, y=PC2, color=as.factor(batch), label=name)) + geom_point() + geom_text(nudge_x = 0.3, nudge_y = 0.3, show.legend = FALSE) +
     labs(x = paste0('PC1 (', percentVar[1], '% Variance Explained)'),
          y = paste0('PC2 (', percentVar[2], '% Variance Explained)'),
@@ -195,7 +205,7 @@ Conduct DESeq2 for TMAO outlier sample vs. other samples.
 
 ```{r}
 tmao_conditions_minimal_outlier <- tmao_conditions_minimal
-tmao_conditions_minimal_outlier$condition <- ifelse(tmao_conditions_minimal_outlier$sample == 'TMAO_3', 'Outlier', 'Not Outlier')
+tmao_conditions_minimal_outlier$condition <- ifelse(tmao_conditions_minimal_outlier$sample == 'Expt1_TMAO3', 'Outlier', 'Not Outlier')
 tmao_conditions_minimal_outlier$condition <- factor(tmao_conditions_minimal_outlier$condition, levels = c("Not Outlier", "Outlier"))
 deseq2_output_tmao_outlier_vs_others <- deseq2_function(tmao_conditions_minimal_outlier, txi_tmao_samples, smallestGroupSize=1)
 ```
@@ -272,6 +282,11 @@ sample_cooks_df <- data.frame(
   ) %>%
   arrange(desc(mean_cooks))
 
+# Simpler name for sample
+sample_cooks_df$sample <- sample_cooks_df$sample %>%
+  str_extract("[^_]+$") %>%
+  str_replace("([A-Za-z]+)([0-9]+)$", "\\1_\\2")
+
 sample_cooks_df$sample <- factor(sample_cooks_df$sample, levels = sample_cooks_df$sample)
 
 ggplot(sample_cooks_df, aes(x = sample, y = mean_cooks)) +
@@ -323,16 +338,36 @@ expt2_hb_abundances <- dplyr::select(expt2_hb_abundances, -Gene)
 
 # Merge
 tmao_hb_abundances <- dplyr::rename(tmao_hb_abundances,
-                                    S_1_Expt1=S_1,
-                                    S_2_Expt1=S_2,
-                                    S_3_Expt1=S_3,
-                                    S_4_Expt1=S_4)
+                                    S_1_Expt1=Expt1_S1,
+                                    S_2_Expt1=Expt1_S2,
+                                    S_3_Expt1=Expt1_S3,
+                                    S_4_Expt1=Expt1_S3,
+                                    TMAO_1 = Expt1_TMAO1,
+                                    TMAO_2 = Expt1_TMAO2,
+                                    TMAO_3 = Expt1_TMAO2,
+                                    TMAO_4 = Expt1_TMAO2)
 
 expt2_hb_abundances <- dplyr::rename(expt2_hb_abundances,
-                                     S_1_Expt2=S_1,
-                                    S_2_Expt2=S_2,
-                                    S_3_Expt2=S_3,
-                                    S_4_Expt2=S_4)
+                                     S_1_Expt2=Expt2_S1,
+                                     S_2_Expt2=Expt2_S2,
+                                     S_3_Expt2=Expt2_S3,
+                                     S_4_Expt2=Expt2_S4,
+                                     GDCA_1=Expt2_GDCA1,
+                                     GDCA_2=Expt2_GDCA2,
+                                     GDCA_3=Expt2_GDCA3,
+                                     GDCA_4=Expt2_GDCA4,
+                                     IAA_1=Expt2_IAA1,
+                                     IAA_2=Expt2_IAA2,
+                                     IAA_3=Expt2_IAA3,
+                                     IAA_4=Expt2_IAA4,
+                                     PA_1=Expt2_PA1,
+                                     PA_2=Expt2_PA2,
+                                     PA_3=Expt2_PA3,
+                                     PA_4=Expt2_PA4,
+                                     SD_1=Expt2_SD1,
+                                     SD_2=Expt2_SD2,
+                                     SD_3=Expt2_SD3,
+                                     SD_4=Expt2_SD4)
 
 merged_hb_abundances <- merge(tmao_hb_abundances, expt2_hb_abundances,
                               by = "gene_names")
@@ -369,11 +404,11 @@ Now run DESeq2 for TMAO excluding the outlier sample.
 ```{r}
 # Fix conditions table
 tmao_conditions_minimal <- dplyr::filter(tmao_conditions_minimal,
-                                         sample != 'TMAO_3')
+                                         sample != 'Expt1_TMAO3')
 tmao_conditions_minimal$condition <- factor(tmao_conditions_minimal$condition,
                                             levels = c("Saline", "TMAO"))
 # Run tximport again
-txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
+txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/path/to/expt1/kallisto/files')
 # DESeq2
 deseq2_output_tmao <- deseq2_function(tmao_conditions_minimal, txi_tmao_samples, smallestGroupSize=3)
 # Output DESeq2 results
@@ -433,18 +468,18 @@ Now move on to experiment 2 samples! First, apply tximport.
 palmitate_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline + DMSO", "PA"))
 palmitate_conditions_minimal$condition <- ifelse(as.character(palmitate_conditions_minimal$condition) == "Saline + DMSO", "Saline_DMSO", as.character(palmitate_conditions_minimal$condition))
 palmitate_conditions_minimal$condition <- factor(palmitate_conditions_minimal$condition, levels = c("Saline_DMSO", "PA"))
-txi_pa_samples <- tximport_function(palmitate_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+txi_pa_samples <- tximport_function(palmitate_conditions_minimal, '/path/to/expt2/kallisto/files')
 
 # IAA
 iaa_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline + DMSO", "IAA"))
 iaa_conditions_minimal$condition <- ifelse(as.character(iaa_conditions_minimal$condition) == "Saline + DMSO", "Saline_DMSO", as.character(iaa_conditions_minimal$condition))
 iaa_conditions_minimal$condition <- factor(iaa_conditions_minimal$condition, levels = c("Saline_DMSO", "IAA"))
-txi_iaa_samples <- tximport_function(iaa_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+txi_iaa_samples <- tximport_function(iaa_conditions_minimal, '/path/to/expt2/kallisto/files')
 
 # GDCA
 gdca_conditions_minimal <- dplyr::filter(expt2_conditions_minimal, condition %in% c("Saline", "GDCA"))
 gdca_conditions_minimal$condition <- factor(gdca_conditions_minimal$condition, levels = c("Saline", "GDCA"))
-txi_gdca_samples <- tximport_function(gdca_conditions_minimal, '/personal/path/to/expt2/kallisto/files')
+txi_gdca_samples <- tximport_function(gdca_conditions_minimal, '/path/to/expt2/kallisto/files')
 ```
 
 For DESeq2, will need to incorporate batch information.
