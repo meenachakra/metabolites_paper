@@ -238,8 +238,16 @@ genes_per_peak_long <- genes_per_peak_long %>%
   left_join(rna_deseq_results_minimal, by = c("gene_raw" = "Gene_Name"))
 
 genes_per_peak_long$both_rna_and_atac_sig <-
-  ifelse(genes_per_peak_long$padj_RNA <= 0.10 &
-           abs(genes_per_peak_long$log2FoldChange_RNA) >= 0.10, "yes", "no")
+  ifelse(
+    is.na(genes_per_peak_long$padj_RNA),
+    NA,
+    ifelse(
+      genes_per_peak_long$padj_RNA <= 0.10 &
+        abs(genes_per_peak_long$log2FoldChange_RNA) >= 0.10,
+      "yes",
+      "no"
+    )
+  )
 
 genes_per_peak_long$directionality_rna_vs_atac <- ifelse(genes_per_peak_long$both_rna_and_atac_sig == "yes", ifelse(sign(genes_per_peak_long$log2FoldChange_ATAC) == sign(genes_per_peak_long$log2FoldChange_RNA), "same", "different"), NA)
 ```
