@@ -15,6 +15,7 @@ library(org.Hs.eg.db)
 library(readr)
 library(forcats)
 library(scales)
+library(writexl)
 ```
 
 Function for converting gene list downloaded from KEGG to Ensembl gene IDs.
@@ -181,7 +182,12 @@ plot_df <- num_ad_pd_degs_per_metab %>%
     nice_metab = fct_reorder(nice_metab, num_ad_pd_degs, .desc = TRUE)
   )
 
-ggplot(plot_df, aes(x = nice_metab, y = num_ad_pd_degs)) +
+plot_df <- dplyr::rename(plot_df, metab_name=nice_metab)
+
+# Write out for source data
+write_xlsx(plot_df, "source_data_num_degs_in_ad_pd_kegg_pathways.xlsx")
+
+ggplot(plot_df, aes(x = metab_name, y = num_ad_pd_degs)) +
   geom_col(
     fill = "#C2BEE8",
     color = "#3B0F70",
