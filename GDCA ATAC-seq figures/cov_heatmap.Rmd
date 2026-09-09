@@ -43,12 +43,19 @@ Combine up peaks and combine down peaks.
 up_peaks_cov_in_saline <- tibble::rownames_to_column(data.frame(up_peaks_cov_in_saline), var = 'pos')
 up_peaks_cov_in_gdca <- tibble::rownames_to_column(data.frame(up_peaks_cov_in_gdca), var = 'pos')
 up_peaks_merged <- merge(up_peaks_cov_in_saline, up_peaks_cov_in_gdca, by = 'pos')
+
+# Write source data file
+write.table(up_peaks_merged, "source_data_cov_heatmap_up.tsv", sep = '\t', quote = FALSE, row.names = FALSE)
+
 up_peaks_merged <- tibble::column_to_rownames(up_peaks_merged, var = 'pos')
 
 # Merge the down peaks
 down_peaks_cov_in_saline <- tibble::rownames_to_column(data.frame(down_peaks_cov_in_saline), var = 'pos')
 down_peaks_cov_in_gdca <- tibble::rownames_to_column(data.frame(down_peaks_cov_in_gdca), var = 'pos')
 down_peaks_merged <- merge(down_peaks_cov_in_saline, down_peaks_cov_in_gdca, by = 'pos')
+
+write.table(down_peaks_merged, "source_data_cov_heatmap_down.tsv", sep = '\t', quote = FALSE, row.names = FALSE)
+
 down_peaks_merged <- tibble::column_to_rownames(down_peaks_merged, var = 'pos')
 ```
 
