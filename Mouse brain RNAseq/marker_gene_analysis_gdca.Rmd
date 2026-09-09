@@ -68,6 +68,12 @@ plot_df <- plot_df %>%
 plot_df$short_name <- factor(plot_df$short_name,
                           levels = plot_df$short_name)
 
+plot_df <- dplyr::rename(plot_df,
+                         n_markers=n_genes)
+
+# write out for source data
+write.table(plot_df, "source_data_fig5b.tsv", sep = '\t', quote = FALSE, row.names = FALSE)
+
 # Lollipop plot
 ggplot(plot_df, aes(x = short_name, y = pct_down)) +
   geom_segment(aes(x = short_name, xend = short_name, y = 0, yend = pct_down),
