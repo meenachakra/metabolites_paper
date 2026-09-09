@@ -169,6 +169,9 @@ for_plotting <- for_plotting %>%
 # To make the plot small enough to manage in Illustrator, eliminate points with FDR = 1
 for_plotting_filtered <- dplyr::filter(for_plotting, FDR < 1)
 
+# Write out for source data
+write.table(for_plotting_filtered, "source_data_splicing_volcano.tsv", sep = '\t', quote = FALSE, row.names = FALSE)
+
 ggplot(for_plotting_filtered, aes(x = IncLevelDifference, y = neglog10fdr, color = sig)) +
   geom_point(alpha = 0.7, size = 1) +
   scale_color_manual(
