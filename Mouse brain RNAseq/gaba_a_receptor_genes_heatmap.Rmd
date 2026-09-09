@@ -47,7 +47,8 @@ tximport function that can read in the kallisto transcript-level counts for samp
 ```{r}
 tximport_function <- function(sample_condition_df, kallisto_dir) {
   # Construct file paths for each sample’s Kallisto output
-  files <- file.path(kallisto_dir, paste0('kallisto_out_', sample_condition_df$sample), "abundance.tsv")
+  # Adjust according to your file organization structure
+  files <- file.path(kallisto_dir, paste0('kallisto_out_', sub("^[^_]*_", "", sample_condition_df$sample)), paste0(sample_condition_df$sample, "_abundance.tsv"))
   names(files) <- sample_condition_df$sample
   
   # Read in the corresponding kallisto results and aggregate to gene level
@@ -71,7 +72,7 @@ conditions_minimal <- dplyr::select(conditions, Experiment,
 colnames(conditions_minimal) <- c("Experiment", "sample", "condition")
 tmao_conditions_minimal <- dplyr::filter(conditions_minimal, Experiment == 1) %>%
   dplyr::select(., -Experiment)
-tmao_conditions_minimal <- dplyr::filter(tmao_conditions_minimal, sample != "TMAO_3")
+tmao_conditions_minimal <- dplyr::filter(tmao_conditions_minimal, sample != "Expt1_TMAO3")
 
 # Apply tximport function
 txi_tmao_samples <- tximport_function(tmao_conditions_minimal, '/personal/path/to/expt1/kallisto/files')
@@ -136,6 +137,16 @@ gaba_a_receptor_genes <- c("Gabra1", "Gabra2", "Gabra6", "Gabrb1", "Gabrb2", "Ga
 gaba_a_receptor_genes_rlog <- dplyr::filter(rlog_counts, Gene_Name %in% gaba_a_receptor_genes)
 
 # Heatmap
+# Rename samples to shorter names
+gaba_a_receptor_genes_rlog <- dplyr::rename(gaba_a_receptor_genes_rlog,
+                                            S_1=Expt1_S1,
+                                            S_2=Expt1_S2,
+                                            S_3=Expt1_S3,
+                                            S_4=Expt1_S4,
+                                            TMAO_1=Expt1_TMAO1,
+                                            TMAO_2=Expt1_TMAO2,
+                                            TMAO_4=Expt1_TMAO4)
+
 sample_names <- c("S_1", "S_2", "S_3", "S_4", "TMAO_1", "TMAO_2", "TMAO_4")
 gaba_a_receptor_genes_rlog <- dplyr::select(gaba_a_receptor_genes_rlog, Gene_Name, all_of(sample_names))
   
@@ -161,5 +172,9 @@ pheatmap(scaled_matrix,
          filename = 'gaba_a_receptor_genes_heatmap.pdf',
          cluster_cols = FALSE,
          height = 4)
-  
+
+# Write out source data file
+scaled_matrix_df <- data.frame(scaled_matrix)
+scaled_matrix_df <- tibble::rownames_to_column(scaled_matrix_df, var = "Gene")
+write.table(scaled_matrix_df, "source_data_gaba_heatmap.tsv", sep = '\t', row.names = FALSE, quote = FALSE)
 ```
