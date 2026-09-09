@@ -1,0 +1,7 @@
+cluster	n_markers	n_down	pct_down	short_name
+Neuronal_lineage	897	146	16.2764771460424	Neuron
+Astrocyte_lineage	503	40	7.95228628230616	Astro
+Ependymal_cells	1331	87	6.53643876784373	Epend
+Vasculature_cells	753	44	5.84329349269588	Vasc
+Oligodendrocyte_lineage	700	26	3.71428571428571	Olg
+Immune_cells	591	17	2.87648054145516	Immune
