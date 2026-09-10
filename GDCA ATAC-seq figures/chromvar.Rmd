@@ -166,7 +166,7 @@ pheatmap(merged, cluster_rows = F,
      cluster_cols = F, scale = "row", filename =
      "chromvar_results/Top25_TF_Heatmap.pdf",height=7,width=7)
 # write out source data
-merged <- data.frame(merged) %>% tibble::rownames_to_column(., var = "Sample")
+merged <- data.frame(merged) %>% tibble::rownames_to_column(., var = "Motif")
 write.table(merged, "chromvar_results/unscaled_source_data_top_25_heatmap.tsv",
             sep = '\t', row.names = FALSE, quote = FALSE)
 ```
