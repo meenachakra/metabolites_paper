@@ -96,6 +96,12 @@ pheatmap(sample_cor_TF, clustering_distance_rows =
      as.dist(1-sample_cor_TF),  clustering_distance_cols =
   as.dist(1-sample_cor_TF), filename = "chromvar_results/heatmap_sample_correlations.pdf",
          height=3,width=7)
+
+# write out source data
+sample_cor_TF <- data.frame(sample_cor_TF) %>%
+  tibble::rownames_to_column(., var = "Sample")
+write.table(sample_cor_TF, "chromvar_results/source_data_sample_correlation_heatmap.tsv",
+            sep = '\t', row.names = FALSE, quote = FALSE)
 ```
 
 Make a graph showing the 10 most variable TFs.
@@ -159,4 +165,8 @@ merged <- as.matrix(dplyr::select(data.frame(merged), "Control_1", "Control_2", 
 pheatmap(merged, cluster_rows = F,
      cluster_cols = F, scale = "row", filename =
      "chromvar_results/Top25_TF_Heatmap.pdf",height=7,width=7)
+# write out source data
+merged <- data.frame(merged) %>% tibble::rownames_to_column(., var = "Sample")
+write.table(merged, "chromvar_results/unscaled_source_data_top_25_heatmap.tsv",
+            sep = '\t', row.names = FALSE, quote = FALSE)
 ```
