@@ -227,16 +227,16 @@ ggplot(plot_df, aes(x = metab_name, y = num_ad_pd_degs)) +
     axis.text.x = element_text(
       angle = 45,
       hjust = 1,
-      size = 11,
+      size = 10,
       color = "black"
     ),
     axis.title.x = element_blank(),
     axis.text.y = element_text(
-      size = 11,
+      size = 8,
       color = "black"
     ),
     axis.title.y = element_text(
-      size = 12,
+      size = 10,
       color = "black"
     ),
     legend.title = element_blank(),
@@ -246,5 +246,5 @@ ggplot(plot_df, aes(x = metab_name, y = num_ad_pd_degs)) +
     axis.line.x = element_line(color = "black"),
     axis.line.y = element_line(color = "black")
   )
-ggsave('num_degs_in_ad_pd_kegg_pathways.pdf', width = 8, height = 3.5)
+ggsave('num_degs_in_ad_pd_kegg_pathways.pdf', width = 7, height = 2.75)
 ```
