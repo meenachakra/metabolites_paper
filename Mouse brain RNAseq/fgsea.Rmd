@@ -217,7 +217,7 @@ ggplot(mh_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
       panel.grid.minor = element_blank(), 
       axis.line = element_line(colour = "black"),
       axis.text.x=element_text(size=8, color = "black"), 
-      axis.text.y=element_text(size=10, color='black'),
+      axis.text.y=element_text(size=8, color='black'),
       axis.title.x=element_text(size=10, color='black'),
       axis.title=element_blank(),
       legend.title=element_text(size=8, color='black'),
@@ -225,7 +225,7 @@ ggplot(mh_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
   labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") +
 scale_y_continuous(breaks = integer_breaks()) 
 
-ggsave('fgsea_results/fgsea_mh_tmao.pdf', width = 4, height = 3)
+ggsave('fgsea_results/fgsea_mh_tmao.pdf', width = 3.5, height = 2.5)
 ```
 
 Next - TMAO, REACTOME results of interest.
@@ -270,7 +270,7 @@ ggplot(reactome_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
       panel.grid.minor = element_blank(), 
       axis.line = element_line(colour = "black"),
       axis.text.x=element_text(size=8, color = "black"), 
-      axis.text.y=element_text(size=10, color='black'),
+      axis.text.y=element_text(size=8, color='black'),
       axis.title.x=element_text(size=10, color='black'),
       axis.title=element_blank(),
       legend.title=element_text(size=8, color='black'),
@@ -278,7 +278,7 @@ ggplot(reactome_res_tmao, aes(x=pathway, y=NES, fill=neglog10padj)) +
   labs(y = 'Normalized Enrichment Score (NES)', fill = "-log10(padj)") + scale_y_continuous(breaks = integer_breaks()) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "#008888", linewidth = 1) 
 
-ggsave('fgsea_results/fgsea_reactome_tmao.pdf', width = 4, height = 3)
+ggsave('fgsea_results/fgsea_reactome_tmao.pdf', width = 3.5, height = 2.5)
 ```
 
 Next, significant GDCA MH results.
