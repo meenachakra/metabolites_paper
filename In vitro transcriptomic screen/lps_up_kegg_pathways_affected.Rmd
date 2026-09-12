@@ -48,13 +48,13 @@ functional_enrichment_plotting <- function(results, src, figname, figtitle, excl
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(), 
         axis.line = element_line(colour = "black"),
-        axis.text.x=element_text(size=11, color = "black"), 
-        axis.text.y=element_text(size=11, color='black'),
-        axis.title.x=element_text(size=11, color='black'),
-        axis.title=element_blank(),
-        legend.title=element_text(size=10, color='black'),
-        legend.text=element_text(size=10, color='black'),
-        plot.title=element_text(size=12, color='black')) +
+        axis.text.x=element_text(size=8, color = "black"), 
+        axis.text.y=element_text(size=10, color='black'),
+        axis.title.x=element_text(size=10, color='black'),
+        axis.title.y=element_blank(),
+        legend.title=element_text(size=8, color='black'),
+        legend.text=element_text(size=8, color='black'),
+        plot.title=element_text(size=10, color='black')) +
     labs(y = 'Gene Count', title=figtitle, fill = "-log10(padj)") +
   scale_y_continuous(breaks = integer_breaks()) 
   
@@ -68,7 +68,7 @@ Apply for LPS "up" gprofiler results.
 # Batch1
 batch1 <- read.csv('lps_up_gprofiler_kegg/batch1.csv')
 
-functional_enrichment_plotting(batch1, 'KEGG', 'lps_up_gprofiler_kegg/batch_1.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"))
+functional_enrichment_plotting(batch1, 'KEGG', 'lps_up_gprofiler_kegg/batch_1.pdf', 'Genes Increased by LPS Control: Top KEGG Terms', c("KEGG root term"), wid=7, ht=1.75)
 
 # Batch 2
 batch2 <- read.csv('lps_up_gprofiler_kegg/batch2.csv')
