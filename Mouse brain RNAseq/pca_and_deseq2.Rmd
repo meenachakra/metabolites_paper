@@ -448,7 +448,7 @@ ggplot(tmao_res, aes(x = log2FoldChange, y = -log10(padj))) +
        title = "Volcano plot for TMAO (1.8 mg/kg)") +
       geom_text_repel(aes(label = Label),
                     na.rm = TRUE,
-                    size = 2,
+                    size = 2.5,
                     color = 'black',
                     segment.size = 0.4,
                     segment.color = "black",
@@ -550,7 +550,7 @@ output_degs(deseq2_output_gdca[[1]],
 Volcano plots! Make more efficient with a function.
 
 ```{r}
-volcano <- function(deseq_results, fname, metab_name, ymax, thresh=0.10, wid=4, ht=4, label_genes=NULL, p_cap=NULL) {
+volcano <- function(deseq_results, fname, metab_name, ymax, thresh=0.10, wid=3.5, ht=3, label_genes=NULL, p_cap=NULL) {
   # Read in the file
   deseq_results <- read.csv(deseq_results, sep='\t')
   
@@ -623,8 +623,7 @@ volcano('deseq2_outputs/pa_all_results.txt', 'volcano_plot_pa.pdf',
           "ENSMUSG00000038495.15",
           "ENSMUSG00000039826.14",
           "ENSMUSG00000120854.1",
-          "ENSMUSG00000121069.1"),
-wid = 4, ht = 4)
+          "ENSMUSG00000121069.1"))
 
 # IAA
 volcano('deseq2_outputs/iaa_all_results.txt', 'volcano_plot_iaa.pdf',
@@ -632,8 +631,7 @@ volcano('deseq2_outputs/iaa_all_results.txt', 'volcano_plot_iaa.pdf',
         label_genes = c(
           "ENSMUSG00000009734.19",
           "ENSMUSG00000040842.18",
-          "ENSMUSG00000120777.1"),
-wid = 4, ht = 4)
+          "ENSMUSG00000120777.1"))
 
 # GDCA
 volcano('deseq2_outputs/gdca_all_results.txt', 'volcano_plot_gdca.pdf',
@@ -657,6 +655,5 @@ volcano('deseq2_outputs/gdca_all_results.txt', 'volcano_plot_gdca.pdf',
                         "ENSMUSG00000048489.13",
                         "ENSMUSG00000032515.9",
                         "ENSMUSG00000023067.15",
-                        "ENSMUSG00000020423.7"),
-wid = 4, ht = 4, p_cap = 1e-30)
+                        "ENSMUSG00000020423.7"), p_cap = 1e-30)
 ```
