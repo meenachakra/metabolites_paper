@@ -220,7 +220,7 @@ ggplot(plot_df, aes(x = metab_name, y = num_ad_pd_degs)) +
   ) +
   labs(
     x = NULL,
-    y = "# DEGs in AD/PD Pathways"
+    y = "DEGs in AD/PD Pathways"
   ) +
   theme_classic(base_size = 11) +
   theme(
@@ -246,5 +246,5 @@ ggplot(plot_df, aes(x = metab_name, y = num_ad_pd_degs)) +
     axis.line.x = element_line(color = "black"),
     axis.line.y = element_line(color = "black")
   )
-ggsave('num_degs_in_ad_pd_kegg_pathways.pdf', width = 7, height = 2.75)
+ggsave('num_degs_in_ad_pd_kegg_pathways.pdf', width = 6.8, height = 2.75)
 ```
