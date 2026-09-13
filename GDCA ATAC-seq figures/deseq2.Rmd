@@ -162,7 +162,7 @@ dds_results_no_brain_3$neglog10p <- -log10(dds_results_no_brain_3$padj)
 dds_results_no_brain_3$significance <- ifelse(dds_results_no_brain_3$padj <= 0.1 & dds_results_no_brain_3$log2FoldChange > 0, "More accessible", ifelse(dds_results_no_brain_3$padj <= 0.1 & dds_results_no_brain_3$log2FoldChange < 0, "Less accessible", "Not significant"))
 
 ggplot(dds_results_no_brain_3, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
-geom_point(alpha = 0.6, size = 1.5) +
+geom_point(alpha = 0.4, size = 0.75) +
 scale_color_manual(values = c("More accessible" = "#9f329f", "Less accessible" = "#008888", "Not significant" = "gray")) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
     geom_hline(yintercept = 1, linetype = "dashed", color = "gray70", linewidth = 0.5) +
@@ -173,7 +173,7 @@ theme(legend.position = "none",
       axis.title = element_text(size = 10, color = 'black'),
       plot.title = element_text(size = 10, color = 'black')) 
 
-ggsave('volcano_plot.pdf', width = 3.75, height = 2.75)
+ggsave('volcano_plot.pdf', width = 3.5, height = 2)
 ```
 
 Output files that are needed for the coverage heatmaps (section 3.9 from this article: https://link.springer.com/protocol/10.1007/978-1-0716-1103-6_10)
