@@ -78,9 +78,9 @@ write.table(plot_df, "source_data_fig5b.tsv", sep = '\t', quote = FALSE, row.nam
 ggplot(plot_df, aes(x = short_name, y = pct_down)) +
   geom_segment(aes(x = short_name, xend = short_name, y = 0, yend = pct_down),
                color = "#5b45a2", linewidth = 1) +
-  geom_point(shape = 21, fill = NA, color = "#5b45a2", size = 3.8, stroke = 1.2) +
+  geom_point(shape = 21, fill = NA, color = "#5b45a2", size = 3.5, stroke = 1.2) +
   theme_minimal() +
-  labs(y = '% Marker Genes Downregulated') +
+  labs(y = '% Markers Downregulated') +
   theme(axis.line = element_line(color = 'black'),
         axis.title.y = element_text(color = 'black', size = 10),
         axis.title.x = element_blank(),
@@ -88,5 +88,5 @@ ggplot(plot_df, aes(x = short_name, y = pct_down)) +
         axis.text.x = element_text(color = 'black', size = 10),
         panel.grid = element_blank())
 
-ggsave('pc_marker_genes_downregulated_by_gdca_per_class.pdf', height = 2.5, width = 3.75)
+ggsave('pc_marker_genes_downregulated_by_gdca_per_class.pdf', height = 2, width = 3.5)
 ```
