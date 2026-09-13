@@ -138,7 +138,7 @@ ggplot(plot_df, aes(x = short_name, y = pct_down)) +
                color = "#5b45a2", linewidth = 1) +
   geom_point(shape = 21, fill = NA, color = "#5b45a2", size = 3.8, stroke = 1.2) +
   theme_minimal() +
-  labs(y = '% Marker Genes Downregulated') +
+  labs(y = '% Markers Downregulated') +
   theme(axis.line = element_line(color = 'black'),
         axis.title.y = element_text(color = 'black', size = 10),
         axis.title.x = element_blank(),
