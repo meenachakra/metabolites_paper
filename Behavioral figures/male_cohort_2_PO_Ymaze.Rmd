@@ -109,7 +109,7 @@ entries_summary$`Mouse Group` <- factor(entries_summary$`Mouse Group`,
 entries_summary <- dplyr::rename(entries_summary, `Male Mouse\nGroup`=`Mouse Group`)
 
 # Plot line graph
-ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative arm entries") +
+ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Cumulative entries") +
     scale_color_manual(values = c("Veh (PO)" = "#008888", "G_10 (PO)" = "#9f329f",
                                   "G_50 (PO)" = "#000080")) +
     theme_bw() +
@@ -119,19 +119,19 @@ ggplot(entries_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup
       legend.title = element_text(size = 10, color = 'black'),
       legend.text = element_text(size = 8, color = 'black'))
 
-ggsave('Male cohort 2 - PO/ymaze_cumulative_arm_entries.pdf', width = 4, height = 2)
+ggsave('Male cohort 2 - PO/ymaze_cumulative_arm_entries.pdf', width = 3.5, height = 1.5)
 ```
 
 Also want to make a boxplot for entries (0-5min).
 
 ```{r}
 generic_boxplot_func <- function(df, variable, ylab,
-                          fname, ymax, wid = 2, ht = 2) {
+                          fname, ymax, wid = 1.75, ht = 1.5) {
   
   df <- dplyr::filter(df, Measure == variable)
   ggplot(df, aes(x=`Mouse Group`, y=Value)) +
-    geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 1) +
-    geom_point(color = "grey", position = position_jitter(width = 0.1), size = 1) +
+    geom_boxplot(aes(color = `Mouse Group`), fill = NA, outlier.shape = NA, linewidth = 0.5) +
+    geom_point(color = "grey", position = position_jitter(width = 0.1), size = 0.5) +
     scale_color_manual(values = c("Veh\n(PO)" = "#008888", "G_10\n(PO)" = "#9f329f",
                                   "G_50\n(PO)" = "#000080")) +
     theme_bw() +
@@ -190,7 +190,7 @@ distance_summary$`Mouse Group` <- factor(distance_summary$`Mouse Group`,
 distance_summary <- dplyr::rename(distance_summary, `Male Mouse\nGroup`=`Mouse Group`)
 
 # Plot line graph
-ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance moved (cm/min)") +
+ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGroup`, group = `Male Mouse\nGroup`)) + geom_line() + geom_point() + geom_errorbar(aes(ymin = mean_value - se, ymax = mean_value + se), width = 0.2) + labs(x = "Time (Min)", y = "Distance (cm/min)") +
     scale_color_manual(values = c("Veh (PO)" = "#008888", "G_10 (PO)" = "#9f329f",
                                   "G_50 (PO)" = "#000080")) +
     theme_bw() +
@@ -200,7 +200,7 @@ ggplot(distance_summary, aes(x = Time, y = mean_value, color = `Male Mouse\nGrou
       legend.title = element_text(size = 10, color = 'black'),
       legend.text = element_text(size = 8, color = 'black'))
 
-ggsave('Male cohort 2 - PO/ymaze_distance_moved_per_min.pdf', width = 4, height = 2)
+ggsave('Male cohort 2 - PO/ymaze_distance_moved_per_min.pdf', width = 3.5, height = 1.5)
 ```
 
 Also make boxplot for cumulative distance moved by the end, and print out the stats.
