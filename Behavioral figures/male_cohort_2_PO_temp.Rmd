@@ -87,7 +87,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
     data = summary_temp_data,
     aes(x = Time, y = mean, color = MouseGroup, group = MouseGroup),
     position = position_dodge(width = 7),
-    size = 1.8,
+    size = 1.2,
     inherit.aes = FALSE
   ) +
   
@@ -108,7 +108,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
   
   labs(
     x = "Time after dosing (min)",
-    y = expression(Delta*" Temp vs. Baseline ("*degree*"C)"),
+    y = expression(Delta*" Temp ("*degree*"C)"),
     color = NULL
   ) +
   
@@ -127,7 +127,7 @@ p <- ggplot(temp_data, aes(x = Time, y = change_from_baseline, color = MouseGrou
 
 p
 
-ggsave("Male cohort 2 - PO/Temp_graph.pdf", plot = p, height = 2, width = 4)
+ggsave("Male cohort 2 - PO/Temp_graph.pdf", plot = p, height = 1.5, width = 3.5)
 ```
 
 Stats at 60 min timepoint to match female tests - one way ANOVA followed by posthoc testing.
