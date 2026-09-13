@@ -130,7 +130,7 @@ ggplot(ann_stats_present_peaks, aes(x = Annotation,
   scale_fill_manual(values = c(`Obs < Exp` = "#008888",
                                `Obs > Exp` = "#9f329f")) +
   labs(x = NULL, y = "Log2(Observed / Expected)", fill = "Direction",
-       title = "Differential Peaks: Overlapping Genomic Features") +
+       title = "Differential Peaks: Overlapping Features") +
   theme_bw() +
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1, color = 'black', size = 10),
@@ -140,9 +140,9 @@ ggplot(ann_stats_present_peaks, aes(x = Annotation,
         legend.text = element_text(size = 10, color = 'black'),
           legend.position = c(0.02, 0.98),
   legend.justification = c("left", "top"),
-  plot.title = element_text(size = 10, color = 'black')) + ylim(-1,1.75)
+  plot.title = element_text(size = 10, color = 'black', hjust = 0.5)) + ylim(-1,1.75)
 
-ggsave('obs_vs_expected_per_major_feature.pdf', width = 3.75, height = 3)
+ggsave('obs_vs_expected_per_major_feature.pdf', width = 3.5, height = 2.5)
 ```
 Determine the genes whose regulatory regions overlap with each peak, using rGREAT.
 
