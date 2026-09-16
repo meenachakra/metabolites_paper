@@ -18,6 +18,7 @@ library(stringr)
 library(reshape2)
 library(ggpubr)
 library(ggrepel)
+library(ggrastr)
 ```
 Read in the data frame that came with the kallisto index, which links ensembl transcripts to ensembl genes.
 
@@ -433,8 +434,13 @@ tmao_res$color_category <- ifelse(tmao_res$padj <= 0.10 & tmao_res$log2FoldChang
                       ifelse(tmao_res$padj <= 0.10 & tmao_res$log2FoldChange <= -0.1, "Downregulated", "n.s."))
 
 # Volcano plot
-ggplot(tmao_res, aes(x = log2FoldChange, y = -log10(padj))) +
-  geom_point(aes(color = color_category), alpha = 0.6, size = 1.5) +
+ggplot(tmao_res, aes(x = log2FoldChange, y = -log10(padj), color = color_category)) +
+  ggrastr::geom_point_rast(
+  alpha = 0.6,
+  size = 1,
+  raster.dpi = 300,
+  dev = "ragg_png"
+) +
   scale_color_manual(values = c("Upregulated" = "#9f329f", "Downregulated" = "#008888", "n.s." = "grey")) +
   theme_bw() +
   geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
@@ -579,7 +585,7 @@ volcano <- function(deseq_results, fname, metab_name, ymax, thresh=0.10, wid=3.5
   
   # Plot
   ggplot(deseq_results, aes(x = log2FoldChange, y = neglog10p, color = significance)) +
-  geom_point(alpha = 0.6, size = 1.5) +  # Scatter plot points
+  ggrastr::geom_point_rast(alpha = 0.6, size = 1, raster.dpi = 300, dev = "ragg_png") + # Scatter plot points
   scale_color_manual(values = c("Upregulated" = "#9f329f", "Downregulated" = "#008888", "n.s." = "grey")) +
     geom_vline(xintercept = 0, linetype = "dashed", color = "gray70", linewidth = 0.5) +
     geom_hline(yintercept = 1, linetype = "dashed", color = "gray70", linewidth = 0.5) +
